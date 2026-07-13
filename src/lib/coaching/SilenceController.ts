@@ -71,6 +71,14 @@ export function decideSilence(
       return SPEAK('reminder spaced');
     }
 
+    case 'reinforcement': {
+      // Reinforcement carries a lesson forward with fresh wording — spaced like a
+      // normal coaching line so it never turns into chatter.
+      const minGap = config.minCoachingGapMs * scale;
+      if (sinceLast < minGap) return HUSH('reinforcement inside quiet window');
+      return SPEAK('reinforcement due');
+    }
+
     case 'urgency': {
       // Earned push, and only with a little air in front of it.
       if (sinceLast < config.minCorrectionGapMs * scale) return HUSH('urgency too soon');

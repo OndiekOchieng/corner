@@ -13,6 +13,8 @@
 import type { CoachIntent } from './CoachAction';
 import type { ConversationState } from './ConversationState';
 import type { PersonalityProfile, ComposedKey } from './personalities';
+import { anchorBank, type AnchorKind } from './anchors';
+import { reinforcementBank, type Dimension } from './reinforcements';
 
 export interface PlanParams {
   roundNumber?: number;
@@ -24,6 +26,10 @@ export interface PlanParams {
   /** Authored cue text, spoken verbatim for instruction/reminder/correction. */
   cueText?: string;
   isFinalRound?: boolean;
+  /** Layer 2: which time anchor this is. */
+  anchorKind?: AnchorKind;
+  /** Layer 3: the coaching dimension, for reinforcement wording. */
+  dimension?: Dimension;
 }
 
 const NUMBER_WORDS = [
@@ -93,14 +99,34 @@ export class SpeechPlanner {
       return text ? text : null;
     }
 
+    // Layer 2 — a personality-voiced time anchor, rotated for variety.
+    if (intent === 'time_anchor') {
+      if (!params.anchorKind) return null;
+      return this.fromBank(anchorBank(this.profile.id, params.anchorKind), `anchor:${params.anchorKind}`, convo, attempt);
+    }
+
+    // Layer 3 — reinforce a lesson with fresh wording (same dimension, new words).
+    if (intent === 'reinforcement') {
+      const dim = params.dimension ?? 'general';
+      return this.fromBank(reinforcementBank(dim), `reinforce:${dim}`, convo, attempt);
+    }
+
     const key = composedKey(intent, params);
     if (!key) return null;
+    return this.fromBank(this.profile.banks[key], `${this.profile.id}:${key}`, convo, attempt, params);
+  }
 
-    const bank = this.profile.banks[key];
+  /** Pick a rotated variant from a bank; fill placeholders when params are given. */
+  private fromBank(
+    bank: readonly string[] | undefined,
+    rotationKey: string,
+    convo: ConversationState,
+    attempt: number,
+    params?: PlanParams,
+  ): string | null {
     if (!bank || bank.length === 0) return null;
-
-    const base = convo.nextRotation(`${this.profile.id}:${key}`);
+    const base = convo.nextRotation(rotationKey);
     const template = bank[(base + attempt) % bank.length];
-    return fill(template, params);
+    return params ? fill(template, params) : template;
   }
 }

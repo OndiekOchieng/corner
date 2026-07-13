@@ -29,9 +29,11 @@ export type CoachIntent =
   | 'workout_intro'
   | 'warmup'
   | 'round_intro'
+  | 'time_anchor'
   | 'instruction'
   | 'reminder'
   | 'correction'
+  | 'reinforcement'
   | 'encouragement'
   | 'urgency'
   | 'countdown'
@@ -55,8 +57,10 @@ export const INTENT_PRIORITY: Readonly<Record<CoachIntent, number>> = {
   warmup: 80,
   round_intro: 78,
   rest_intro: 72,
+  time_anchor: 66,
   urgency: 60,
   correction: 52,
+  reinforcement: 46,
   instruction: 44,
   reminder: 40,
   teaching: 34,
@@ -64,7 +68,11 @@ export const INTENT_PRIORITY: Readonly<Record<CoachIntent, number>> = {
   encouragement: 22,
 };
 
-/** Intents that form the trust skeleton — never silenced, never deduped away. */
+/**
+ * Intents that form the trust skeleton — never silenced, never deduped away.
+ * Time anchors join it: they orient the athlete and must land (Layer 2), but they
+ * are sparse, so always speaking them never threatens the silence budget.
+ */
 const STRUCTURAL: ReadonlySet<CoachIntent> = new Set([
   'workout_intro',
   'warmup',
@@ -72,6 +80,7 @@ const STRUCTURAL: ReadonlySet<CoachIntent> = new Set([
   'rest_intro',
   'countdown',
   'finish',
+  'time_anchor',
 ]);
 
 /** Intents that may cut off whatever is currently being said. */
@@ -82,6 +91,7 @@ const REPEATABLE: ReadonlySet<CoachIntent> = new Set([
   'instruction',
   'reminder',
   'correction',
+  'reinforcement',
   'encouragement',
   'urgency',
   'recovery',

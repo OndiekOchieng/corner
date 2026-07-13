@@ -119,8 +119,9 @@ export class CoachRuntime {
 
     const action = this.buildAction(candidate.intent, text, event, candidate.ttlMs);
     // Commit to conversation memory now so later candidates in this same batch
-    // (e.g. teaching after the rest intro) see it and space themselves.
-    this.convo.noteSpoken(candidate.intent, text, event.elapsedMs);
+    // (e.g. teaching after the rest intro) see it and space themselves. The
+    // dimension is recorded so the next same-dimension cue reinforces (varies).
+    this.convo.noteSpoken(candidate.intent, text, event.elapsedMs, candidate.params.dimension);
     this.diagnostics.recordGenerated();
 
     const discarded = this.queue.enqueue(action);

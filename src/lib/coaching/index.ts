@@ -49,6 +49,22 @@ export {
 } from './personalities';
 
 export {
+  ANCHOR_BANKS,
+  ANCHOR_IDS,
+  anchorBank,
+  parseAnchorKind,
+  isAnchorId,
+  type AnchorKind,
+} from './anchors';
+
+export {
+  REINFORCEMENTS,
+  reinforcementBank,
+  classifyDimension,
+  type Dimension,
+} from './reinforcements';
+
+export {
   CoachRuntimePlugin,
   createCoachRuntimePlugin,
   speechServiceSink,

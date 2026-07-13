@@ -6,12 +6,35 @@
  * Cue timing is normalised to be strictly increasing and inside the round
  * (0 < atMs < workMs) so the engine's Timeline never rejects it. The app has no
  * warmup concept, so `warmupMs` is 0 (no warmup segment is emitted).
+ *
+ * Time anchors (Layer 2 coaching) are authored CONTENT, not runtime logic. This
+ * mapper injects sensible defaults ("two minutes", "one minute", "thirty seconds")
+ * for rounds long enough to warrant them, unless the author already placed them —
+ * so every workout gets time-awareness while the engine still does the scheduling.
  */
 
 import type { Workout, CoachingCue } from '@/types/workout';
 import type { WorkoutConfig, RoundConfig, CueConfig } from '@/src/types/workout-config';
 
 const clamp = (v: number, min: number, max: number) => Math.min(Math.max(v, min), max);
+
+interface Intended {
+  id: string;
+  text: string;
+  atMs: number;
+}
+
+/** Default anchors, injected for rounds long enough (by remaining time). */
+const ANCHOR_PLAN: ReadonlyArray<{
+  readonly id: string;
+  readonly text: string;
+  readonly remainingMs: number;
+  readonly minWorkMs: number;
+}> = [
+  { id: 'anchor-twomin', text: 'Two minutes to go.', remainingMs: 120_000, minWorkMs: 165_000 },
+  { id: 'anchor-onemin', text: 'One minute to go.', remainingMs: 60_000, minWorkMs: 90_000 },
+  { id: 'anchor-thirty', text: 'Thirty seconds.', remainingMs: 30_000, minWorkMs: 55_000 },
+];
 
 /** Fallback placement for a cue that only carries a coarse `timing`. */
 function timingToMs(timing: CoachingCue['timing'], workMs: number): number {
@@ -26,10 +49,9 @@ function timingToMs(timing: CoachingCue['timing'], workMs: number): number {
   }
 }
 
-function toCues(cues: readonly CoachingCue[], workMs: number): CueConfig[] {
+function authoredCues(cues: readonly CoachingCue[], workMs: number): Intended[] {
   if (workMs <= 1000) return [];
-
-  const intended = cues
+  return cues
     .map((c, i) => ({ c, i }))
     .filter(({ c }) => (c.text ?? '').trim().length > 0)
     .map(({ c, i }) => {
@@ -38,14 +60,34 @@ function toCues(cues: readonly CoachingCue[], workMs: number): CueConfig[] {
           ? Math.round(c.timeSeconds * 1000)
           : timingToMs(c.timing, workMs);
       return { id: (c.id ?? '').trim() || `cue-${i}`, text: c.text.trim(), atMs: clamp(at, 1, workMs - 1) };
-    })
-    .sort((a, b) => a.atMs - b.atMs);
+    });
+}
 
-  // Enforce strictly-increasing, in-range times and unique ids.
+/** Injected anchors that fit the round and don't clash with authored content. */
+function anchorCues(workMs: number, authored: readonly Intended[]): Intended[] {
+  const authoredIds = new Set(authored.map((c) => c.id));
+  const out: Intended[] = [];
+  for (const a of ANCHOR_PLAN) {
+    if (workMs < a.minWorkMs) continue;
+    if (authoredIds.has(a.id)) continue; // author already placed this anchor
+    const atMs = workMs - a.remainingMs;
+    if (atMs < 8000 || atMs > workMs - 12000) continue; // too early / clashes with the countdown
+    const clash =
+      authored.some((c) => Math.abs(c.atMs - atMs) < 5000) ||
+      out.some((c) => Math.abs(c.atMs - atMs) < 5000);
+    if (clash) continue;
+    out.push({ id: a.id, text: a.text, atMs });
+  }
+  return out;
+}
+
+/** Sort + enforce strictly-increasing, in-range times and unique ids. */
+function normalize(entries: Intended[], workMs: number): CueConfig[] {
+  const sorted = [...entries].sort((a, b) => a.atMs - b.atMs);
   const out: CueConfig[] = [];
   const seen = new Set<string>();
   let prev = 0;
-  for (const cue of intended) {
+  for (const cue of sorted) {
     const atMs = Math.max(cue.atMs, prev + 1);
     if (atMs >= workMs) break; // no room left in the round
     let id = cue.id;
@@ -56,6 +98,12 @@ function toCues(cues: readonly CoachingCue[], workMs: number): CueConfig[] {
     prev = atMs;
   }
   return out;
+}
+
+function toCues(cues: readonly CoachingCue[], workMs: number): CueConfig[] {
+  const authored = authoredCues(cues, workMs);
+  const anchors = anchorCues(workMs, authored);
+  return normalize([...authored, ...anchors], workMs);
 }
 
 export function toWorkoutConfig(workout: Workout): WorkoutConfig {

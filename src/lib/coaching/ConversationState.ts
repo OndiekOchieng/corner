@@ -11,6 +11,7 @@
  */
 
 import { isStructural, type CoachEnergy, type CoachIntent } from './CoachAction';
+import type { Dimension } from './reinforcements';
 
 /** Immutable view handed to the silence controller and planner. */
 export interface ConversationSnapshot {
@@ -41,6 +42,8 @@ export class ConversationState {
   private readonly recentTexts: string[] = [];
   private readonly reminderTextAt = new Map<string, number>();
   private readonly rotations = new Map<string, number>();
+  /** Coaching dimensions already taught in the CURRENT round (reset each round). */
+  private readonly roundTaughtDimensions = new Set<Dimension>();
 
   constructor(private readonly dedupeWindow: number) {}
 
@@ -74,6 +77,11 @@ export class ConversationState {
     return this.recentTexts.includes(text);
   }
 
+  /** Has this coaching dimension already been taught in the current round? */
+  wasDimensionTaughtThisRound(dimension: Dimension): boolean {
+    return this.roundTaughtDimensions.has(dimension);
+  }
+
   /** Next deterministic rotation index for a variant bank (no randomness). */
   nextRotation(key: string): number {
     const n = this.rotations.get(key) ?? 0;
@@ -90,6 +98,8 @@ export class ConversationState {
   enterRound(roundNumber: number): void {
     this.currentRound = roundNumber;
     this.energy = 'steady';
+    // A new round is a fresh focus — dimensions can be taught verbatim again.
+    this.roundTaughtDimensions.clear();
   }
 
   setEnergy(energy: CoachEnergy): void {
@@ -98,7 +108,7 @@ export class ConversationState {
 
   // --- record what was actually said -----------------------------------------
 
-  noteSpoken(intent: CoachIntent, text: string, elapsedMs: number): void {
+  noteSpoken(intent: CoachIntent, text: string, elapsedMs: number, dimension?: Dimension): void {
     this.lastIntent = intent;
     this.lastSpokenElapsedMs = elapsedMs;
     this.linesSpoken += 1;
@@ -112,6 +122,8 @@ export class ConversationState {
     if (intent === 'correction') this.lastCorrectionElapsedMs = elapsedMs;
     if (intent === 'encouragement') this.lastEncouragementElapsedMs = elapsedMs;
     if (intent === 'reminder') this.reminderTextAt.set(text, elapsedMs);
+    // Remember the dimension so the next same-dimension cue reinforces (varies).
+    if (dimension) this.roundTaughtDimensions.add(dimension);
   }
 
   /** Full reset for a new session (also used defensively on cancel). */
@@ -128,5 +140,6 @@ export class ConversationState {
     this.recentTexts.length = 0;
     this.reminderTextAt.clear();
     this.rotations.clear();
+    this.roundTaughtDimensions.clear();
   }
 }

@@ -16,6 +16,8 @@ import type { CoachIntent } from './CoachAction';
 import type { CoachContext } from './CoachContext';
 import type { ConversationState } from './ConversationState';
 import type { PlanParams } from './SpeechPlanner';
+import { parseAnchorKind } from './anchors';
+import { classifyDimension } from './reinforcements';
 
 export interface DirectedIntent {
   readonly intent: CoachIntent;
@@ -75,12 +77,26 @@ export class CoachDirector {
       }
 
       case 'COACH_CUE': {
-        const intent = classifyCue(event.data.text);
         convo.setEnergy('steady');
+        const roundNumber = event.data.roundIndex + 1;
+
+        // Layer 2 — an authored (or injected) time anchor.
+        const anchorKind = parseAnchorKind(event.data.cueId);
+        if (anchorKind) {
+          return [{ intent: 'time_anchor', params: { anchorKind } }];
+        }
+
+        // Layer 3 — reinforce instead of repeating the same lesson within a round.
+        const dimension = classifyDimension(event.data.text);
+        if (convo.wasDimensionTaughtThisRound(dimension)) {
+          return [{ intent: 'reinforcement', params: { dimension, roundNumber } }];
+        }
+
+        // First time this dimension is taught this round — speak it as authored.
         return [
           {
-            intent,
-            params: { cueText: event.data.text, roundNumber: event.data.roundIndex + 1 },
+            intent: classifyCue(event.data.text),
+            params: { cueText: event.data.text, dimension, roundNumber },
           },
         ];
       }
