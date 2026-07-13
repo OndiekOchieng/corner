@@ -256,13 +256,45 @@ export class SpeechService {
     this.pump();
   }
 
-  /** Stop everything: cancel the current utterance and drop the queue. */
+  /**
+   * Stop everything: cancel the current utterance and drop the queue. This is
+   * the EXPLICIT stop (barge-in, quit, disable) and DOES cancel the shared
+   * global `speechSynthesis` — that is the intended effect for a real cancel.
+   * Teardown must NOT use this; teardown calls `dispose()` (below).
+   */
   cancel(): void {
     this.queue = [];
     this.current = null;
     this.speaking = false;
     this.paused = false;
     this.synth?.cancel();
+  }
+
+  /**
+   * Instance-local teardown. Unlike `cancel()`, this NEVER calls the shared
+   * global `speechSynthesis.cancel()`. `window.speechSynthesis` is a single
+   * global shared by every SpeechService instance, so cancelling it while
+   * disposing one instance would abort an utterance owned by another — which is
+   * exactly what happened under React StrictMode's build→dispose→build cycle
+   * (the disposed instance cancelled its own first utterance before `onstart`,
+   * producing `error="canceled"` and silence). Disposal only neutralises THIS
+   * instance: it detaches the in-flight utterance's callbacks (so a dead
+   * instance never mutates state) and drops its own queue/listeners. Anything
+   * already handed to the browser is left to finish under the browser's
+   * ownership.
+   */
+  dispose(): void {
+    if (this.current) {
+      this.current.onstart = null;
+      this.current.onend = null;
+      this.current.onerror = null;
+    }
+    this.queue = [];
+    this.current = null;
+    this.speaking = false;
+    this.paused = false;
+    this.voicesListeners.clear();
+    // Intentionally NO this.synth.cancel() — see the doc comment above.
   }
 
   /** Drop pending utterances but let the currently-speaking one finish. */

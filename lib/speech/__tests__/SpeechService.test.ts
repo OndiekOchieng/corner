@@ -104,6 +104,33 @@ describe('SpeechService', () => {
     });
   });
 
+  describe('dispose — instance-local teardown (does NOT touch the shared global)', () => {
+    it('leaves the shared synth engine running so another instance is unaffected', () => {
+      service.speak('a');
+      expect(synth.current?.text).toBe('a');
+      expect(synth.speaking).toBe(true);
+
+      service.dispose();
+
+      // The global engine is untouched — an utterance owned elsewhere survives.
+      // (This is the fix: React StrictMode's build→dispose→build no longer
+      // cancels its own in-flight utterance before onstart.)
+      expect(synth.current?.text).toBe('a');
+      expect(synth.speaking).toBe(true);
+      // …but THIS instance is neutralised: queue dropped, callbacks detached.
+      expect(service.pendingCount).toBe(0);
+      expect(service.isSpeaking()).toBe(false);
+      expect(synth.current?.onend).toBeNull();
+    });
+
+    it('contrast: cancel() DOES cancel the shared engine', () => {
+      service.speak('a');
+      service.cancel();
+      expect(synth.current).toBeNull();
+      expect(synth.speaking).toBe(false);
+    });
+  });
+
   describe('clearQueue', () => {
     it('drops pending utterances but lets the current one finish', () => {
       service.speak('a');

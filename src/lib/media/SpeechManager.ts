@@ -29,6 +29,8 @@ export interface SpeechEngine {
   onVoicesChanged(listener: (voices: readonly unknown[]) => void): () => void;
   /** Optional: refresh voices + clear a suspended queue from a gesture (Chrome/iOS). */
   warm?(): void;
+  /** Optional: instance-local teardown that does NOT cancel the shared global engine. */
+  dispose?(): void;
   /** Optional: the currently selected voice (for diagnostics). */
   getSelectedVoice?(): { name: string } | null;
   /** Optional: stable instance id + boundary counters (speech-pipeline trace). */
@@ -122,6 +124,11 @@ export class SpeechManager {
 
   dispose(): void {
     this.unsubscribe();
-    this.engine.cancel();
+    // Prefer instance-local teardown so disposing one instance never cancels the
+    // shared global speechSynthesis (which would abort another instance's
+    // utterance — the StrictMode build→dispose→build silence). Fall back to
+    // cancel() only for engines that predate dispose() (e.g. test fakes).
+    if (this.engine.dispose) this.engine.dispose();
+    else this.engine.cancel();
   }
 }
