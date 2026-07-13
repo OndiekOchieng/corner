@@ -1,6 +1,7 @@
 'use client';
 
 import { BackLink } from '@/components/ui/BackLink';
+import { PageContainer } from '@/components/ui/PageContainer';
 import { WorkoutLibrary } from '@/components/WorkoutLibrary/WorkoutLibrary';
 import { useWorkout } from '@/hooks';
 
@@ -8,7 +9,7 @@ export default function WorkoutsPage() {
   const { workouts, loading, error } = useWorkout();
 
   return (
-    <main className="screen mx-auto max-w-6xl px-5 py-10 md:px-8">
+    <PageContainer width="wide">
       <BackLink href="/" label="Home" />
 
       <div className="mb-8 mt-6">
@@ -36,6 +37,6 @@ export default function WorkoutsPage() {
       ) : (
         <WorkoutLibrary workouts={workouts} />
       )}
-    </main>
+    </PageContainer>
   );
 }

@@ -3,6 +3,7 @@
 import { Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { RestScreen } from '@/components/Rest/RestScreen';
+import { PageContainer } from '@/components/ui/PageContainer';
 import { useTimer } from '@/hooks';
 
 function RestPageContent() {
@@ -13,12 +14,12 @@ function RestPageContent() {
   const timer = useTimer(restDuration);
 
   return (
-    <main className="screen mx-auto max-w-2xl px-5 py-10 md:px-8">
+    <PageContainer center>
       <RestScreen
         remainingSeconds={timer.remainingSeconds}
         nextRoundName={nextRoundName}
       />
-    </main>
+    </PageContainer>
   );
 }
 

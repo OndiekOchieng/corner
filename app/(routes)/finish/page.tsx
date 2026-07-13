@@ -3,6 +3,7 @@
 import { Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { FinishScreen } from '@/components/Finish/FinishScreen';
+import { PageContainer } from '@/components/ui/PageContainer';
 
 function FinishPageContent() {
   const searchParams = useSearchParams();
@@ -12,14 +13,14 @@ function FinishPageContent() {
   const totalRounds = parseInt(searchParams.get('totalRounds') || '0', 10);
 
   return (
-    <main className="screen mx-auto max-w-2xl px-5 py-10 md:px-8">
+    <PageContainer>
       <FinishScreen
         workoutName={workoutName}
         duration={duration}
         roundsCompleted={roundsCompleted}
         totalRounds={totalRounds}
       />
-    </main>
+    </PageContainer>
   );
 }
 

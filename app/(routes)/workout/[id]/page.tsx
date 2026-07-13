@@ -2,6 +2,7 @@
 
 import { useParams } from 'next/navigation';
 import { WorkoutDetail } from '@/components/WorkoutDetail/WorkoutDetail';
+import { PageContainer } from '@/components/ui/PageContainer';
 import { useWorkout } from '@/hooks';
 
 export default function WorkoutDetailPage() {
@@ -12,27 +13,25 @@ export default function WorkoutDetailPage() {
 
   if (loading) {
     return (
-      <main className="screen mx-auto max-w-2xl px-5 py-10 md:px-8">
+      <PageContainer center>
         <p className="text-muted-foreground">Loading workout...</p>
-      </main>
+      </PageContainer>
     );
   }
 
   if (error || !workout) {
     return (
-      <main className="screen mx-auto max-w-2xl px-5 py-10 md:px-8">
-        <div className="bg-destructive/10 border border-destructive/50 rounded-lg p-4">
-          <p className="text-destructive">
-            {error || 'Workout not found'}
-          </p>
+      <PageContainer center>
+        <div className="w-full rounded-2xl border border-destructive/40 bg-destructive/10 p-4">
+          <p className="text-destructive">{error || 'Workout not found'}</p>
         </div>
-      </main>
+      </PageContainer>
     );
   }
 
   return (
-    <main className="screen mx-auto max-w-2xl px-5 py-10 md:px-8">
+    <PageContainer>
       <WorkoutDetail workout={workout} />
-    </main>
+    </PageContainer>
   );
 }

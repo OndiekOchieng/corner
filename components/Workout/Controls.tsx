@@ -12,10 +12,11 @@ interface ControlsProps {
 }
 
 /**
- * Deliberately sparse. Once a workout is running the athlete shouldn't need to
- * touch anything — so the primary control is a single large pause/resume, sized
- * to be hit with a glove (64px targets, well above the 44px minimum). Quit is
- * intentionally quieter and set apart so it isn't tapped by accident.
+ * One decision at a time. While the workout runs, the only control is a single
+ * full-width PAUSE — nothing else to hit with a glove, and no way to quit by
+ * accident. Pausing reveals RESUME (primary) stacked above END WORKOUT, so the
+ * two critical actions are never side by side on a narrow phone. Every target is
+ * a comfortable full-width block, 48–64px tall, easy to hit with gloves on.
  */
 export function Controls({
   isPaused,
@@ -24,41 +25,43 @@ export function Controls({
   onResume,
   onQuit,
 }: ControlsProps) {
-  return (
-    <div className="flex items-center gap-3">
-      {/* Render the transport toggle while running OR paused — a paused workout
-          MUST always offer Resume (status is 'paused', not 'running'). */}
-      {(isActive || isPaused) && (
-        isPaused ? (
-          <Button
-            aria-label="Resume workout"
-            className="h-16 flex-1 gap-2 rounded-2xl bg-primary text-lg font-semibold text-primary-foreground hover:bg-primary/90 landscape:h-14 landscape:text-base"
-            onClick={onResume}
-          >
-            <Play className="size-6" />
-            Resume
-          </Button>
-        ) : (
-          <Button
-            aria-label="Pause workout"
-            variant="secondary"
-            className="h-16 flex-1 gap-2 rounded-2xl text-lg font-semibold landscape:h-14 landscape:text-base"
-            onClick={onPause}
-          >
-            <Pause className="size-6" />
-            Pause
-          </Button>
-        )
-      )}
+  if (isPaused) {
+    return (
+      <div className="flex flex-col gap-3">
+        <Button
+          aria-label="Resume workout"
+          className="h-16 w-full gap-2 rounded-2xl bg-primary text-lg font-semibold text-primary-foreground hover:bg-primary/90 landscape:h-14"
+          onClick={onResume}
+        >
+          <Play className="size-6" />
+          Resume
+        </Button>
+        <Button
+          aria-label="End workout"
+          variant="destructive"
+          className="h-14 w-full gap-2 rounded-2xl text-base font-semibold landscape:h-12"
+          onClick={onQuit}
+        >
+          <X className="size-5" />
+          End workout
+        </Button>
+      </div>
+    );
+  }
 
+  if (isActive) {
+    return (
       <Button
-        aria-label="End workout"
-        variant="ghost"
-        className="h-16 w-16 shrink-0 rounded-2xl text-muted-foreground hover:bg-destructive/15 hover:text-destructive landscape:h-14 landscape:w-14"
-        onClick={onQuit}
+        aria-label="Pause workout"
+        variant="secondary"
+        className="h-16 w-full gap-2 rounded-2xl text-lg font-semibold landscape:h-14"
+        onClick={onPause}
       >
-        <X className="size-6" />
+        <Pause className="size-6" />
+        Pause
       </Button>
-    </div>
-  );
+    );
+  }
+
+  return null;
 }

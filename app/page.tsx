@@ -1,6 +1,7 @@
 'use client';
 
 import { HomeScreen } from '@/components/Home/HomeScreen';
+import { PageContainer } from '@/components/ui/PageContainer';
 import { useWorkout, useLocalStorage } from '@/hooks';
 
 export default function Page() {
@@ -12,7 +13,7 @@ export default function Page() {
     : undefined;
 
   return (
-    <main className="screen mx-auto max-w-2xl px-5 py-12 md:px-8">
+    <PageContainer>
       {loading ? (
         <div className="space-y-8">
           <div className="h-12 w-40 animate-pulse rounded-xl bg-card" />
@@ -25,6 +26,6 @@ export default function Page() {
       ) : (
         <HomeScreen todayWorkout={todayWorkout} />
       )}
-    </main>
+    </PageContainer>
   );
 }

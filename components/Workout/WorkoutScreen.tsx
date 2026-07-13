@@ -1,10 +1,9 @@
 'use client';
 
 import { Countdown } from './Countdown';
-import { RoundNumber } from './RoundNumber';
 import { CoachingCues } from './CoachingCues';
 import { Controls } from './Controls';
-import { CoachPresence } from './CoachPresence';
+import { WorkoutHUD } from './WorkoutHUD';
 import { Round } from '@/types/workout';
 
 interface WorkoutScreenProps {
@@ -55,17 +54,16 @@ export function WorkoutScreen({
     <div
       key={isResting ? 'rest' : 'work'}
       data-phase={isResting ? 'rest' : 'work'}
-      className="screen animate-phase-in flex flex-col justify-between gap-6 p-5 md:p-8 landscape:flex-row landscape:items-center landscape:gap-5 landscape:p-3"
+      className="workout-canvas animate-phase-in flex flex-col justify-between gap-6 landscape:flex-row landscape:items-center landscape:gap-5"
     >
-      {/* Top: identity + round position. Minimal, quiet. */}
-      <header className="flex items-start justify-between gap-4 landscape:hidden">
-        <CoachPresence active={coachActive} paused={isPaused} />
-        <RoundNumber
-          current={currentRound}
-          total={totalRounds}
-          resting={isResting}
-        />
-      </header>
+      {/* Top: the HUD — coach status + round position, aligned to the canvas gutter. */}
+      <WorkoutHUD
+        coachActive={coachActive}
+        isPaused={isPaused}
+        currentRound={currentRound}
+        totalRounds={totalRounds}
+        isResting={isResting}
+      />
 
       {/* Center: the timer is the hero. Everything else orbits it. */}
       <section

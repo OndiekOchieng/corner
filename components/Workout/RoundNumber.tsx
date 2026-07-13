@@ -17,8 +17,8 @@ export function RoundNumber({ current, total, resting = false }: RoundNumberProp
   const clamped = Math.min(Math.max(current, 1), safeTotal);
 
   return (
-    <div className="flex flex-col items-end gap-2">
-      <div className="flex items-baseline gap-1.5">
+    <div className="flex flex-col items-end gap-2.5">
+      <div className="flex items-baseline gap-2">
         <span className="eyebrow">{resting ? 'Up Next' : 'Round'}</span>
         <span
           className={`text-2xl font-bold tabular-nums leading-none ${

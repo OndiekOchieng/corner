@@ -13,11 +13,11 @@ interface HomeScreenProps {
 
 export function HomeScreen({ todayWorkout }: HomeScreenProps) {
   return (
-    <div className="animate-rise space-y-10">
-      <header className="flex items-start justify-between">
+    <div className="animate-rise space-y-8">
+      <header className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-4xl font-bold tracking-tight">Corner</h1>
-          <p className="mt-1 text-muted-foreground">The coach in your corner.</p>
+          <p className="mt-1.5 text-muted-foreground">The coach in your corner.</p>
         </div>
         <Link
           href="/settings"

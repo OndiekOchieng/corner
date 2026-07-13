@@ -1,6 +1,7 @@
 'use client';
 
 import { BackLink } from '@/components/ui/BackLink';
+import { PageContainer } from '@/components/ui/PageContainer';
 import { Button } from '@/components/ui/button';
 import {
   SettingGroup,
@@ -43,7 +44,7 @@ export default function SettingsPage() {
     'w-full h-2 bg-muted rounded-full appearance-none cursor-pointer accent-[var(--push)]';
 
   return (
-    <main className="screen mx-auto max-w-2xl px-5 py-10 md:px-8">
+    <PageContainer>
       <BackLink href="/" label="Home" />
 
       <div className="mb-8 mt-6">
@@ -242,6 +243,6 @@ export default function SettingsPage() {
       <div className="mt-10 text-center text-xs text-muted-foreground">
         <p>Corner v2.0 — the coach in your corner</p>
       </div>
-    </main>
+    </PageContainer>
   );
 }

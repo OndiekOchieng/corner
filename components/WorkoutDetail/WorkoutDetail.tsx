@@ -64,9 +64,10 @@ export function WorkoutDetail({ workout }: WorkoutDetailProps) {
         <RoundPreview rounds={workout.rounds} />
       </div>
 
-      {/* Start is always reachable — pinned to the bottom of the viewport. */}
-      <div className="fixed inset-x-0 bottom-0 z-10 border-t border-border bg-background/90 p-4 backdrop-blur-md">
-        <div className="mx-auto max-w-2xl">
+      {/* Start is always reachable — pinned to the bottom of the viewport,
+          aligned to the same content column as the cards above. */}
+      <div className="page-gutter fixed inset-x-0 bottom-0 z-10 border-t border-border bg-background/90 py-4 backdrop-blur-md">
+        <div className="mx-auto w-full max-w-2xl">
           <Link
             href={`/workout/${workout.id}/active`}
             className={cn(

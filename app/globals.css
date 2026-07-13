@@ -254,13 +254,50 @@
 ------------------------------------------------------------------------------*/
 @layer utilities {
   /* Full-height screens that respect notches and home indicators — essential
-     for a phone laid on the floor. */
+     for a phone laid on the floor. Edge-to-edge by design (the workout hero). */
   .screen {
     min-height: 100svh;
     padding-left: max(env(safe-area-inset-left), 0px);
     padding-right: max(env(safe-area-inset-right), 0px);
     padding-bottom: max(env(safe-area-inset-bottom), 0px);
     padding-top: max(env(safe-area-inset-top), 0px);
+  }
+
+  /* Page content shell — one deliberate reading column for every content screen.
+     The horizontal gutter is always >= 24px (more with a notch), so content never
+     touches the edge; the vertical padding + safe-area frame the column. Content
+     max-width + centering are applied by the PageContainer component. */
+  .page-shell {
+    min-height: 100svh;
+    padding-top: max(env(safe-area-inset-top), 3rem);
+    padding-bottom: max(env(safe-area-inset-bottom), 2.5rem);
+    padding-left: max(env(safe-area-inset-left), 1.5rem);
+    padding-right: max(env(safe-area-inset-right), 1.5rem);
+  }
+
+  /* The same horizontal gutter for elements that can't live inside .page-shell
+     (e.g. a fixed bottom action bar) so their content still aligns to the column. */
+  .page-gutter {
+    padding-left: max(env(safe-area-inset-left), 1.5rem);
+    padding-right: max(env(safe-area-inset-right), 1.5rem);
+  }
+
+  /* The active-workout canvas. Shares the app's 24px content gutter (so the HUD,
+     timer, card and buttons all align to one column) while keeping the vertical
+     padding tight — the timer stays the hero. Safe-area aware on every edge, with
+     a tighter vertical rhythm in landscape where height is scarce. */
+  .workout-canvas {
+    min-height: 100svh;
+    padding-left: max(env(safe-area-inset-left), 1.5rem);
+    padding-right: max(env(safe-area-inset-right), 1.5rem);
+    padding-top: max(env(safe-area-inset-top), 1.5rem);
+    padding-bottom: max(env(safe-area-inset-bottom), 1.25rem);
+  }
+  @media (orientation: landscape) {
+    .workout-canvas {
+      padding-top: max(env(safe-area-inset-top), 0.75rem);
+      padding-bottom: max(env(safe-area-inset-bottom), 0.75rem);
+    }
   }
 
   .elevate-1 {

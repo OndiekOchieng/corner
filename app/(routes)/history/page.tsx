@@ -2,13 +2,14 @@
 
 import Link from 'next/link';
 import { BackLink } from '@/components/ui/BackLink';
+import { PageContainer } from '@/components/ui/PageContainer';
 import { buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { Flame } from 'lucide-react';
 
 export default function HistoryPage() {
   return (
-    <main className="screen mx-auto max-w-2xl px-5 py-10 md:px-8">
+    <PageContainer>
       <BackLink href="/" label="Home" />
 
       <div className="mb-8 mt-6">
@@ -38,6 +39,6 @@ export default function HistoryPage() {
           Choose a workout
         </Link>
       </div>
-    </main>
+    </PageContainer>
   );
 }
