@@ -1,212 +1,96 @@
-# Corner — Target Architecture
+# Architecture — Snapshot
 
-**Status:** Proposed (companion to `AUDIT.md` and `ROADMAP.md`)
-**Goal:** A reliable, accessible, testable coaching runner where a single clock and a single state machine drive the UI, audio, and speech — with static content served efficiently and persisted user data validated.
-
----
-
-## 1. Guiding principles
-
-1. **One clock.** A running workout has exactly one time source: a monotonic `performance.now()` anchor. Everything (display, cue timing, phase transitions) is *derived* from elapsed time, not accumulated per-frame.
-2. **One state machine.** Phase transitions live in a single reducer/machine, not scattered across a hook, a page's effects, and a manager class.
-3. **Events, not effect-polling.** The engine emits discrete events (`roundStart`, `cue`, `countdown`, `restStart`, `finish`); audio and speech *subscribe*. No component re-derives "did we cross a boundary?" from `timeRemaining` each render.
-4. **Render only when the user-visible value changes.** The animation loop updates a ref/store; React re-renders at ~1 Hz for the digit display (and can subscribe separately for a smooth progress ring).
-5. **Server by default, client where interactive.** Static workout content is a Server Component concern; only the runner is `'use client'`.
-6. **Typed, validated boundaries.** All persisted/URL data crosses a Zod-validated boundary with versioning.
+The canonical, high-level view of Corner as it is built today. For the narrative
+tour see the root [`ARCHITECTURE.md`](../ARCHITECTURE.md); for the deep design see
+[`docs/architecture/`](architecture/), [`docs/coaching-runtime/`](coaching-runtime/),
+and [`docs/media-runtime/`](media-runtime/). For the engineering principles behind
+these boundaries, see [`ARCHITECTURE_PRINCIPLES.md`](ARCHITECTURE_PRINCIPLES.md).
 
 ---
 
-## 2. Current architecture (as-is)
+## The canonical diagram
 
 ```
-app/page.tsx (client) ──► useWorkout ──► lib/workouts ──► data/seeded-workouts.ts
-                          useLocalStorage('selectedWorkoutId')   ← never written
+                    Workout  (immutable content: rounds, cues, timing)
+                       │  compiled to a WorkoutConfig
+                       ▼
+              Execution Engine   pure domain — Timeline + state machine +
+                       │         reducer (state, command) → { state, events }
+                       │  deterministic event stream
+                       ▼
+                 Host Runtime     drives the engine on a browser clock (RAF),
+                       │          reconciles time, exposes snapshots to React
+                       │  forwards each dispatch's new events
+                       ▼
+                Event Runtime     event bus — subscribers react in priority
+                       │          order, isolated from one another
+                       │  events
+                       ▼
+                Coach Runtime     judgement — whether to speak, what to say,
+                       │          when to stay quiet (no browser knowledge)
+                       │  coaching actions → SpeechSink
+                       ▼
+                Media Runtime     the ONLY layer that touches the browser
+                       │
+          ┌────────────┼────────────┐
+          ▼            ▼            ▼
+       Speech        Bells      Wake Lock     (+ capabilities · visibility)
 
-app/workout/[id]/active/page.tsx (client)
-   ├─ useWorkout.loadWorkoutById
-   ├─ usePreferences ─ useLocalStorage
-   ├─ useWorkoutEngine ──┬─ useRAFTimer      (setState @60fps, onComplete in updater)
-   │                     └─ useSpeech        (DISABLED via speechEnabled:false)
-   ├─ useSpeechCoach     (separate queue)
-   ├─ CoachingManager    (constructed only on WARMUP → never)     ◄── dead
-   ├─ 6× useEffect polling engine.phase/timeRemaining
-   └─ lib/audio bells
-        navigate ► /finish?workoutId=…   ►  FinishScreen reads workoutName/duration/… ◄── mismatch
+   Session Runtime — persistence & History, attached as an event subscriber
+   (a plug-in the engine is unaware of), not a layer in the vertical flow.
 ```
 
-Problems this shape creates (see `AUDIT.md`): duplicated timers/speech, effect-based boundary detection that spams, a manager gated on an unreachable phase, per-frame re-renders, cross-route state via query strings, and no single owner of "the current phase's duration."
+Data flows **one way, downward**. Every arrow is an event or a narrow port; no
+lower layer imports, calls, or knows about a higher one.
 
 ---
 
-## 3. Target architecture (to-be)
+## Layer responsibilities
 
-### 3.1 Layered view
-
-```
-┌──────────────────────────────────────────────────────────────┐
-│ Routes (app/)                                                  │
-│  • Static/content routes = Server Components (RSC)             │
-│  • /workout/[id]/run     = thin client container              │
-└───────────────┬──────────────────────────────────────────────┘
-                │ props / context
-┌───────────────▼──────────────────────────────────────────────┐
-│ Presentation (components/)  — pure, memoized, a11y-first       │
-│  WorkoutRunnerView · Countdown(role=timer) · Controls · Cues   │
-└───────────────┬──────────────────────────────────────────────┘
-                │ selectors / callbacks
-┌───────────────▼──────────────────────────────────────────────┐
-│ Application (hooks/)                                           │
-│  useWorkoutRunner()  ── orchestrates:                          │
-│    • workoutMachine (reducer)   ◄── single source of truth     │
-│    • useClock()                 ── one rAF anchored to now()   │
-│    • useWakeLock()              ── keep screen awake           │
-│    • AudioCoordinator           ── subscribes to engine events │
-└───────────────┬──────────────────────────────────────────────┘
-                │
-┌───────────────▼──────────────────────────────────────────────┐
-│ Domain (lib/) — framework-free, 100% unit-testable            │
-│  workout-machine.ts · timeline.ts (cue/countdown schedule)    │
-│  speech-queue.ts · bells.ts · formatting.ts · validation.ts   │
-└───────────────┬──────────────────────────────────────────────┘
-                │
-┌───────────────▼──────────────────────────────────────────────┐
-│ Data (data/ + repositories)                                   │
-│  seededWorkouts (static) · workoutRepository (localStorage+Zod)│
-│  sessionRepository (history) · preferencesRepository          │
-└──────────────────────────────────────────────────────────────┘
-```
-
-### 3.2 The workout machine (single source of truth)
-
-A pure reducer, no React:
-
-```
-State = {
-  phase: 'idle' | 'countIn' | 'round' | 'rest' | 'finished'
-  roundIndex: number            // 0-based
-  phaseStartedAt: number        // performance.now() anchor
-  phaseDurationMs: number       // from THIS round (round.drillDuration / round.restDuration)
-  status: 'running' | 'paused'
-  pausedAccumMs: number         // total time spent paused this phase
-}
-
-Events: START, TICK(nowMs), PAUSE(nowMs), RESUME(nowMs), SKIP, QUIT, COMPLETE_PHASE
-
-Derived (selectors, not stored):
-  elapsedMs(now)      = now - phaseStartedAt - pausedAccumMs
-  remainingMs(now)    = max(0, phaseDurationMs - elapsedMs(now))
-  displaySeconds(now) = ceil(remainingMs(now)/1000)
-```
-
-Transitions are total and deterministic; `COMPLETE_PHASE` is emitted **once** when `remainingMs` first hits 0 (latched by comparing previous vs. current tick), fixing P0-4 and P1-7. Per-round durations come from `round.drillDuration`/`round.restDuration`, fixing P1-1. A configurable `countIn` phase (3–2–1) replaces the vestigial `WARMUP` and gives the coach a real hook to announce the workout, fixing the structural cause of P0-1.
-
-### 3.3 One clock
-
-```ts
-useClock(onTick: (nowMs: number) => void, running: boolean)
-// - single requestAnimationFrame loop while running
-// - calls onTick(performance.now()) each frame
-// - reducer computes remaining from the now() anchor (immune to dropped frames)
-// - on 'visibilitychange' → resync immediately (recompute from now())
-// - the VIEW subscribes to displaySeconds via useSyncExternalStore and only
-//   re-renders when the integer second changes (fixes P2-4)
-```
-
-Because state is anchored to `performance.now()`, a suspended tab/screen simply resumes with the correct remaining time on the next tick — combined with Wake Lock (below), the timer stays correct (fixes P0-3).
-
-### 3.4 Wake lock
-
-```ts
-useWakeLock(active: boolean)
-// navigator.wakeLock.request('screen') while a workout runs;
-// re-acquire on visibilitychange (browsers drop the lock on blur);
-// graceful no-op where unsupported.
-```
-
-### 3.5 Audio + speech coordinator (event-driven, consolidated)
-
-Delete `useSpeech` (the disabled duplicate). Keep **one** speech queue, promoted to a framework-free `lib/speech-queue.ts` with: dedup by text within a short window, priority, cancel-on-pause/quit, and a bounded queue. A thin `useSpeechCoach` adapts it to React (voice loading, support detection).
-
-The engine emits events; a single `AudioCoordinator` maps them to speech + bells:
-
-```
-engine.on('countIn',   n)   → speak(n)                 + (optional tick)
-engine.on('roundStart', r)  → speak(`Round ${i}. ${r.name}. ${r.currentDrill}`) + roundBell
-engine.on('cue',        c)  → speak(c.text)            // scheduled by timeline.ts, latched once
-engine.on('countdown',  n)  → speak(n)                 // scheduled once per integer, fixes P1-2
-engine.on('restStart',  r)  → speak('Rest. Next: '+r.name) + restBell
-engine.on('finish',     s)  → speak('Workout complete…') + finishBell
-```
-
-Cue/countdown scheduling moves into a pure `timeline.ts` that, given a round, produces a sorted list of `{ atMs, event }` markers; the coordinator fires each marker exactly once as the clock crosses it. This replaces the six polling effects in `active/page.tsx` and the `CoachingManager` class, and removes all "within 1 second tolerance" heuristics (`coaching-manager.ts:85`).
-
-### 3.6 Data & persistence
-
-```
-data/seeded-workouts.ts            → single source of static content (delete data/workouts.json)
-lib/repositories/workoutRepository → custom workouts, localStorage + Zod + schemaVersion
-lib/repositories/sessionRepository → completed WorkoutSession[] (enables real History)
-lib/repositories/preferencesRepo   → UserPreferences, validated, with defaults/migration
-```
-
-- One `validateWorkout` (`lib/validation.ts`); delete the boolean duplicate in `lib/workouts.ts`.
-- `CustomWorkout.createdAt/lastModified` stored as ISO strings; rehydrate through Zod (fixes the `Date` round-trip bug noted in P2-7).
-- Cross-route state (finish summary) is passed via `sessionRepository` (write session on finish, read it on `/finish`) instead of query strings — fixes P0-2 at the root and enables History for free.
-
-### 3.7 Custom workouts & builder
-
-Wire `useWorkoutBuilder` to a real `/create` route, replace `import { v4 } from 'crypto'` with `crypto.randomUUID()` (P1-5), and have `useWorkoutLibrary` merge seeded + repository workouts so the library and "today's workout" actually reflect user content. Add the missing `selectedWorkoutId` **write** path (a "set as today" action) so `app/page.tsx` populates (P2-1).
+| Layer | Owns | Must not |
+|---|---|---|
+| **Execution Engine** | Timelines, the workout state machine (`idle · warmup · round · rest · finished` × `running · paused`), and a deterministic, monotonic event stream via a pure reducer. Time is derived from an injected clock. | Touch the browser, React, speech, or wall-clock time. |
+| **Host Runtime** | The browser composition root: a real clock + `requestAnimationFrame` loop that advances the engine, reconciles elapsed time across visibility changes, and exposes immutable snapshots to React. | Be the source of truth for time (the engine is). Contain workout logic. |
+| **Event Runtime** | A small event bus. Subscribers register with a priority and react synchronously, isolated by `try/catch`. This is the seam new capabilities plug into. | Let one subscriber see or break another. |
+| **Coach Runtime** | Coaching judgement: a pipeline (Director → Silence → Planner → Queue → Sink) that decides, per event, whether/what/when to speak, varied deterministically by personality and coaching layer. Renders through a narrow `SpeechSink` port. | Import a browser API or synthesize speech itself. |
+| **Media Runtime** | Every browser media concern: the `AudioContext`, the Speech API, the Wake Lock, capability detection, visibility, and graceful degradation. Provides the `SpeechSink`, rings bells, keeps the screen awake, unlocks audio from a gesture. | Decide *what* to say — it only decides whether/how the browser can play it. |
+| **Session Runtime** | Persistence, checkpointing, resume, and History — as an event-subscriber plug-in. `localStorage` is touched in exactly one adapter, behind a versioned envelope. | Be known to the engine; re-speak the past on resume. |
 
 ---
 
-## 4. Component & accessibility contract
+## Dependency rules
 
-- `Countdown` → `role="timer"` + `aria-live="assertive"`/`aria-atomic`, announcing at sensible intervals (not every second).
-- Settings toggles → real `role="switch"` + `aria-checked` + associated label (or a shared `<Switch>` primitive).
-- Sliders → `<label htmlFor>` bound to `id`; keep native `<input type=range>` (accessible by default).
-- Restore pinch-zoom: drop `maximumScale`/`userScalable` (P1-8).
-- Replace `asChild` misuse with base-ui's `render` prop, or render `<Link>` as the button directly, eliminating nested `<a><button>` (P1-3).
-- Add an error boundary per route segment and a `<QuitConfirm>` dialog (P1-10).
-- Provide `prefers-reduced-motion` handling for the timer/animations.
+1. **Downward-only.** A layer may depend on the layers below it (through events or a
+   narrow port), never on the ones above. The Engine depends on nothing.
+2. **The platform is framework-free.** Nothing under `src/lib/**` may import React or
+   a browser API — **except the Media Runtime**, which is the single, deliberate
+   place browser APIs live.
+3. **Events add behaviour, not edits.** A new capability (a bell, a stat, a new coach)
+   is a new **subscriber**, never a change to the engine or a cross-call between
+   concerns.
+4. **One port per boundary.** The Coach Runtime speaks only through `SpeechSink`; the
+   Media Runtime exposes only that port upward. Boundaries are the interface.
+5. **Determinism is a contract.** No `Date.now()`, `performance.now()`, or
+   `Math.random()` in the Engine or Coach Runtime. Timing comes from injected clocks
+   and event `elapsedMs`; variety comes from deterministic rotation.
 
----
+## Why the Engine remains pure
 
-## 5. Tooling & quality gates
+The Engine is the heart, and it is kept free of the browser, React, speech, and
+wall-clock time on purpose:
 
-- **TypeScript:** remove `ignoreBuildErrors`; `tsc --noEmit` clean in CI.
-- **Lint/format:** ESLint flat config (`next/core-web-vitals` + `jsx-a11y`) + Prettier.
-- **Tests:**
-  - *Unit (Vitest):* `workout-machine`, `timeline`, `formatting`, `validation`, `speech-queue` — deterministic, `now()` injected.
-  - *Integration (RTL):* runner drives idle→finish with a fake clock; asserts events/announcements fire once each.
-  - *E2E (Playwright):* start → coach speaks → finish shows real stats → history records.
-- **CI:** typecheck + lint + test on every PR; block on failure.
-- **Perf budget:** move static routes to RSC; keep the runner the only large client chunk.
+- **Trust.** The same event stream *always* produces the same coaching and the same
+  timing. A coach that is deterministic is a coach that can be trusted — one mistimed
+  countdown and the athlete stops believing anything.
+- **Testability.** A pure reducer over an injected clock is exhaustively unit-tested
+  under Node, with no browser and no flaky timers. The platform's 237 tests run in
+  ~1.5s.
+- **Portability.** With zero host dependencies, the same engine can drive a different
+  frontend, a wearable, or a server without change — the host is swappable, the core
+  is not.
+- **Reasoning.** Every effect that could make behaviour non-reproducible (audio,
+  speech, wake lock, storage) is pushed to the edges, so the core stays small and
+  easy to reason about.
 
----
-
-## 6. Proposed target file layout
-
-```
-app/
-  page.tsx                     (RSC) home + "today"
-  workouts/page.tsx            (RSC) library (seed) + client filter island
-  workout/[id]/page.tsx        (RSC) detail
-  workout/[id]/run/page.tsx    (client) thin container → useWorkoutRunner
-  create/page.tsx              (client) builder
-  history/page.tsx             (client) sessionRepository
-  finish/[sessionId]/page.tsx  reads persisted session
-  settings/page.tsx
-components/
-  workout/ (RunnerView, Countdown, Controls, Cues, QuitConfirm)
-  ui/ (Button[render-prop], Card, Switch, Slider)
-hooks/
-  useWorkoutRunner · useClock · useWakeLock · useSpeechCoach · usePreferences
-lib/
-  workout-machine.ts · timeline.ts · speech-queue.ts · bells.ts
-  formatting.ts · validation.ts (single) · constants.ts
-  repositories/ (workout · session · preferences)
-data/ seeded-workouts.ts
-types/ workout.ts
-```
-
-Deleted along the way: `hooks/useTimer.ts`, `hooks/useSpeech.ts`, `hooks/useRAFTimer.ts` (folded into `useClock`), `lib/coaching-manager.ts` (→ `timeline.ts` + coordinator), `data/workouts.json`, `app/workout/rest/*`, `components/Rest/*`, and the boolean `validateWorkout` in `lib/workouts.ts`.
+The unifying principle: **execution is deterministic, events drive behaviour, and
+every boundary exists to make the platform easier to evolve.**

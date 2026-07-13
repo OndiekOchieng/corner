@@ -41,6 +41,27 @@ docs/                Design docs, ADRs, product + coaching + content frameworks
 - **Tests come with changes.** Platform code is thoroughly unit-tested and runs
   headless — keep it that way (`pnpm test`).
 
+## How we work
+
+Corner is built in a particular order, and contributions are expected to follow it.
+The philosophy behind these is in [docs/ARCHITECTURE_PRINCIPLES.md](docs/ARCHITECTURE_PRINCIPLES.md).
+
+- **Architecture first.** Understand the layers before you change them. Data flows one
+  way (Engine → Host → Event → Coach → Media); know which layer owns your concern.
+  A change that needs to cross a boundary is a design discussion, not a quick edit.
+- **Design before implementation.** For anything non-trivial, agree the approach first
+  — in an issue, and in an ADR if it touches a boundary, a public contract, or a
+  platform invariant. Several of our best PRs shipped *only* documents. Design is work.
+- **Evidence before code.** When something is broken, prove *why* with instrumentation
+  or an isolated reproduction before changing behaviour — don't guess-and-patch. The
+  speech-lifecycle fix followed a documented investigation, not a hunch.
+- **Tests before merge.** Platform code is deterministic and framework-free, so it is
+  exhaustively unit-tested and runs headless. New behaviour ships with tests; every PR
+  keeps `pnpm test`, `pnpm build`, and type-checking green.
+- **Documentation is part of done.** If your change alters an architectural boundary,
+  a contract, or an invariant, update the relevant doc/ADR in the *same* PR. Keep the
+  [Engineering Journey](docs/ENGINEERING_JOURNEY.md) and decision log honest.
+
 ## Architectural boundaries (please respect these)
 
 Data flows one way — see [ARCHITECTURE.md](ARCHITECTURE.md). The boundaries are the

@@ -4,6 +4,24 @@ A running record of Architecture Review Board (ARB) decisions. Newest first. Eac
 
 ---
 
+## 2026-07-14 — Speech lifecycle investigation: **RESOLVED**; Coach Runtime operational
+
+**Context.** After the coach reached `speechSynthesis.speak()` but never produced audio on Chrome Android, a multi-stage forensic investigation (PR-014 → PR-018B) traced the failure through the whole speech pipeline. See [`../media-runtime/SPEECH_PIPELINE_TRACE.md`](../media-runtime/SPEECH_PIPELINE_TRACE.md) and [`../ENGINEERING_JOURNEY.md`](../ENGINEERING_JOURNEY.md).
+
+**Decision / findings (Resolved):**
+1. **Root cause identified.** React StrictMode's dev double-invocation (`doubleInvokeEffectsInDEV` → `commitHookPassiveUnmountEffects`) ran the `useCoachedWorkout` build-effect cleanup *between* the first runtime's `controller.start()` (which speaks) and the rebuilt runtime — and `SpeechService.cancel()` cancelled the **shared global** `window.speechSynthesis`, aborting the in-flight utterance before `onstart` (`error="canceled"`, `cancelBeforeOnstart=true`).
+2. **StrictMode disposal issue resolved.** Fix (option 1): `SpeechService.dispose()` is now **instance-local** and never calls the global `speechSynthesis.cancel()`; `SpeechManager.dispose()` prefers `engine.dispose()`. Explicit `cancel()` (quit / barge-in / disable) still cancels the global, as intended. Committed with a regression test; 237 tests green.
+3. **Browser speech pipeline verified.** An isolated, zero-Corner-dependency **Browser Speech Sandbox** (`/dev/speech`, dev-only) validated the native Web Speech engine independently, exonerating the app layer and confirming the boundary.
+4. **Coach Runtime operational end-to-end.** A real workout is coached out loud through the full stack (Engine → Host → Event → Coach → Media), with bells, wake lock, and graceful degradation.
+
+**Principle reinforced:** *explicit ownership* — a per-instance teardown must never mutate a shared global (`window.speechSynthesis`). Recorded in [`../ARCHITECTURE_PRINCIPLES.md`](../ARCHITECTURE_PRINCIPLES.md) (§7).
+
+**Known future work (not blocking this decision):**
+- **On-device confirmation of the production path.** The disposal defect is dev/StrictMode-only; production (no double-invoke) must still be confirmed audible on real iOS Safari and Chrome Android. Tracked in [`../BETA_READY.md`](../BETA_READY.md).
+- **ADR-0003 — background tick source** (screen-off / lock-screen audio continuity) remains **open** and is the next real platform blocker.
+
+---
+
 ## 2026-07-12 — ADR-0002 (Adaptive vs Deterministic Execution): **DEFERRED**
 
 **Decision.** ADR-0002 is **deferred, not rejected**. **ADR-0001 remains the baseline architecture**, amended (below). The adaptive execution model is technically sound but introduces architectural complexity not required to satisfy the currently committed product roadmap.

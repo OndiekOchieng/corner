@@ -4,7 +4,8 @@
 press Start, put the phone down, and train.
 
 > Status: pre-Beta (Internal Alpha). Runs locally; not yet publicly released.
-> Deterministic platform, 223 passing tests.
+> Deterministic platform, 237 passing tests. The coaching pipeline is operational
+> end-to-end — a real workout is coached out loud, with bells, wake lock, and History.
 
 ---
 
@@ -74,15 +75,38 @@ Execution Engine → Host Runtime → Event Runtime → Coach Runtime → Media 
 - **Media Runtime** — the only layer that touches the browser: Speech, Web Audio,
   Wake Lock, capabilities, visibility.
 
-A high-level tour is in **[ARCHITECTURE.md](ARCHITECTURE.md)**; the detailed design
-lives under [`docs/architecture/`](docs/architecture/).
+A high-level tour is in **[ARCHITECTURE.md](ARCHITECTURE.md)**; the canonical snapshot
+and dependency rules are in **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)**; the
+principles behind the boundaries are in
+**[docs/ARCHITECTURE_PRINCIPLES.md](docs/ARCHITECTURE_PRINCIPLES.md)**; and the detailed
+design lives under [`docs/architecture/`](docs/architecture/).
+
+## Current Platform
+
+The implemented stack, wired end-to-end:
+
+| Layer / capability | Status |
+|---|---|
+| Execution Engine (pure domain, state machine, events) | ✓ |
+| Host Runtime (browser clock + RAF loop) | ✓ |
+| Event Runtime (priority event bus) | ✓ |
+| Coach Runtime (judgement: what/when to say) | ✓ |
+| Media Runtime (browser boundary) | ✓ |
+| Session Runtime (persistence plug-in) | ✓ |
+| Persistence (versioned `localStorage` repository) | ✓ |
+| History (completed sessions, ratings) | ✓ |
+| Speech (heard end-to-end; lifecycle defect resolved) | ✓ |
+| Wake Lock (screen kept awake, re-acquired on visibility) | ✓ |
 
 ## Current status
 
 Feature-complete for the current milestone and in **Internal Alpha**. The full
 platform is wired end-to-end: a real workout is coached out loud, with bells, a
-screen wake-lock, and graceful degradation on browsers missing a capability. The
-next milestone is putting it in front of a first athlete. See **[ROADMAP.md](ROADMAP.md)**.
+screen wake-lock, History, and graceful degradation on browsers missing a
+capability. The coaching pipeline is operational; the speech-lifecycle investigation
+is resolved (see **[docs/ENGINEERING_JOURNEY.md](docs/ENGINEERING_JOURNEY.md)**). The
+next milestone is a first athlete on a real bag — readiness is tracked in
+**[docs/BETA_READY.md](docs/BETA_READY.md)**. See also **[ROADMAP.md](ROADMAP.md)**.
 
 ## Run locally
 
