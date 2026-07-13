@@ -8,13 +8,15 @@
 
 import type { WorkoutSession } from '../engine';
 
-export const PERSISTENCE_SCHEMA_VERSION = 2;
+export const PERSISTENCE_SCHEMA_VERSION = 3;
 
 /** The persisted domain object: engine session + Session-Runtime-owned extras. */
 export interface SessionRecord {
   readonly session: WorkoutSession; // objective, produced by the engine
   readonly rating: number | null; // subjective, owned by the Session Runtime
   readonly notes: string | null;
+  /** The coach pack the athlete trained with (for display in History). */
+  readonly coach: string | null;
   readonly savedAt: number;
 }
 
@@ -38,13 +40,19 @@ type RawEnvelope = any;
 type Migration = (raw: RawEnvelope) => RawEnvelope;
 
 /**
- * Migrations upgrade an envelope one version at a time. Built-in: v1 → v2 added
- * the `notes` field (defaults to null). This proves the evolution path is real.
+ * Migrations upgrade an envelope one version at a time. Built-in:
+ *   v1 → v2 added `notes` (defaults to null),
+ *   v2 → v3 added `coach` (defaults to null).
+ * Old payloads upgrade one step at a time on read — the evolution path is real.
  */
 const BUILT_IN_MIGRATIONS: Record<number, Migration> = {
   1: (raw) => ({
     version: 2,
     record: { ...raw.record, notes: raw.record?.notes ?? null },
+  }),
+  2: (raw) => ({
+    version: 3,
+    record: { ...raw.record, coach: raw.record?.coach ?? null },
   }),
 };
 

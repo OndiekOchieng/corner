@@ -21,6 +21,9 @@ export interface SessionSummary {
   readonly completedAt: number | null;
   readonly rating: number | null;
   readonly notes: string | null;
+  readonly coach: string | null;
+  /** Wall-clock time the record was written (when the live `now` is Date.now). */
+  readonly savedAt: number;
   readonly status: string;
 }
 
@@ -35,6 +38,8 @@ export function toSummary(record: SessionRecord): SessionSummary {
     completedAt: s.completedAt,
     rating: record.rating,
     notes: record.notes,
+    coach: record.coach ?? null,
+    savedAt: record.savedAt,
     status: s.status,
   };
 }

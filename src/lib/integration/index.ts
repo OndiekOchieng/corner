@@ -13,3 +13,6 @@ export { CoachSubscriber, COACH_SUBSCRIBER_ID, type Coach, type CoachSubscriberO
 // Live-app wiring: map the app workout into engine config. (Transition bells and
 // all other browser media now live in the Media Runtime — src/lib/media.)
 export { toWorkoutConfig } from './workout-config';
+
+// The single canonical persistence entry point (Session Runtime over LocalStorage).
+export { createSessionRepository, createHistoryService } from './session-store';

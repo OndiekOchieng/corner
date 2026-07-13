@@ -70,10 +70,12 @@ function ActiveRunner({ workout }: { workout: Workout }) {
     ],
   );
 
-  const { snapshot, isSupported, pause, resume, quit } = useCoachedWorkout(workout, settings);
+  const { snapshot, isSupported, pause, resume, quit, getSessionId } = useCoachedWorkout(workout, settings);
 
   // When the engine finishes, let the closing bell + coach line land, then move
   // to the summary. Data comes from the engine snapshot, not a hand-tracked timer.
+  // The session id is carried so the finish screen can attach the athlete's rating
+  // to the session the Persistence Subscriber just wrote to History.
   useEffect(() => {
     if (snapshot.phase !== 'finished') return;
     const durationSec = Math.round(snapshot.elapsedMs / 1000);
@@ -83,9 +85,11 @@ function ActiveRunner({ workout }: { workout: Workout }) {
       roundsCompleted: String(snapshot.totalRounds),
       totalRounds: String(snapshot.totalRounds),
     });
+    const sessionId = getSessionId();
+    if (sessionId) query.set('sessionId', sessionId);
     const timeout = setTimeout(() => router.push(`/finish?${query.toString()}`), 2600);
     return () => clearTimeout(timeout);
-  }, [snapshot.phase, snapshot.elapsedMs, snapshot.totalRounds, workout.name, router]);
+  }, [snapshot.phase, snapshot.elapsedMs, snapshot.totalRounds, workout.name, router, getSessionId]);
 
   const handleQuit = () => {
     quit();

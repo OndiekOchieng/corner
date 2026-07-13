@@ -11,6 +11,7 @@ function FinishPageContent() {
   const duration = parseInt(searchParams.get('duration') || '0', 10);
   const roundsCompleted = parseInt(searchParams.get('roundsCompleted') || '0', 10);
   const totalRounds = parseInt(searchParams.get('totalRounds') || '0', 10);
+  const sessionId = searchParams.get('sessionId');
 
   return (
     <PageContainer>
@@ -19,6 +20,7 @@ function FinishPageContent() {
         duration={duration}
         roundsCompleted={roundsCompleted}
         totalRounds={totalRounds}
+        sessionId={sessionId}
       />
     </PageContainer>
   );

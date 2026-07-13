@@ -96,7 +96,7 @@ describe('PersistenceSubscriber — lifecycle finalize (via the live runtime)', 
     expect((await repo.loadActive()).ok).toBe(false); // active cleared on finish
   });
 
-  it('moves a cancelled session to history and clears the active slot', async () => {
+  it('discards a cancelled session — never enters history, active cleared', async () => {
     const storage = new InMemoryStorageAdapter();
     const diag = new SessionDiagnostics(() => 0);
     const { clock, scheduler, controller, repo } = buildRuntime(storage, diag);
@@ -109,8 +109,7 @@ describe('PersistenceSubscriber — lifecycle finalize (via the live runtime)', 
     await Promise.resolve();
 
     const history = await repo.listHistory();
-    expect(history).toHaveLength(1);
-    expect(history[0].status).toBe('cancelled');
-    expect((await repo.loadActive()).ok).toBe(false);
+    expect(history).toHaveLength(0); // cancel does NOT enter history
+    expect((await repo.loadActive()).ok).toBe(false); // and the active slot is gone
   });
 });

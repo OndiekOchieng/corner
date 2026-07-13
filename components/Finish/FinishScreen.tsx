@@ -1,17 +1,19 @@
 'use client';
 
 import { useState } from 'react';
-import Link from 'next/link';
-import { buttonVariants } from '@/components/ui/button';
+import { useRouter } from 'next/navigation';
+import { Button } from '@/components/ui/button';
 import { Star } from 'lucide-react';
 import { formatDuration } from '@/lib/formatting';
-import { cn } from '@/lib/utils';
+import { createHistoryService } from '@/src/lib/integration';
 
 interface FinishScreenProps {
   workoutName: string;
   duration: number;
   roundsCompleted: number;
   totalRounds: number;
+  /** Id of the session the Persistence Subscriber just wrote to History. */
+  sessionId?: string | null;
 }
 
 export function FinishScreen({
@@ -19,14 +21,30 @@ export function FinishScreen({
   duration,
   roundsCompleted,
   totalRounds,
+  sessionId,
 }: FinishScreenProps) {
+  const router = useRouter();
   const [rating, setRating] = useState<number | null>(null);
   const [notes, setNotes] = useState('');
+  const [saving, setSaving] = useState(false);
 
   const avgRound =
     roundsCompleted > 0
       ? formatDuration(Math.floor(duration / roundsCompleted))
       : '0m';
+
+  // Attach the athlete's rating/notes to the already-persisted session, then go home.
+  const handleDone = async () => {
+    if (sessionId && (rating != null || notes.trim().length > 0)) {
+      setSaving(true);
+      try {
+        await createHistoryService().rateSession(sessionId, rating, notes.trim() || null);
+      } catch {
+        /* never block leaving the screen on a storage hiccup */
+      }
+    }
+    router.push('/');
+  };
 
   return (
     <div className="animate-rise space-y-8">
@@ -82,15 +100,13 @@ export function FinishScreen({
         />
       </div>
 
-      <Link
-        href="/"
-        className={cn(
-          buttonVariants(),
-          'h-14 w-full rounded-2xl bg-primary text-lg font-semibold text-primary-foreground hover:bg-primary/90',
-        )}
+      <Button
+        onClick={handleDone}
+        disabled={saving}
+        className="h-14 w-full rounded-2xl bg-primary text-lg font-semibold text-primary-foreground hover:bg-primary/90"
       >
         Done
-      </Link>
+      </Button>
     </div>
   );
 }

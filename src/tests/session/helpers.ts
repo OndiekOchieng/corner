@@ -22,7 +22,7 @@ export function completedSession(): WorkoutSession {
 }
 
 export function recordFrom(session: WorkoutSession, savedAt = 0): SessionRecord {
-  return { session, rating: null, notes: null, savedAt };
+  return { session, rating: null, notes: null, coach: null, savedAt };
 }
 
 /** A `now` controlled by the test. */

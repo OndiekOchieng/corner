@@ -13,4 +13,14 @@ export const STANCE_LABELS = {
   both: 'Both Stances',
 };
 
+/** Display names for the six Coach Packs (persisted as the pack id). */
+export const COACH_LABELS: Record<string, string> = {
+  technical: 'Technical',
+  oldschool: 'Old School',
+  fightnight: 'Fight Night',
+  calm: 'Calm',
+  competition: 'Competition',
+  southpaw: 'Southpaw',
+};
+
 export const MIN_TOUCH_TARGET = 44;

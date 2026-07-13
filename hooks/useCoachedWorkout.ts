@@ -5,7 +5,8 @@ import type { Workout, CoachPack } from '@/types/workout';
 import type { WorkoutSnapshot } from '@/src/lib/engine';
 import { createHostRuntime, type HostRuntime } from '@/src/lib/host';
 import { createCoachRuntimePlugin } from '@/src/lib/coaching';
-import { toWorkoutConfig } from '@/src/lib/integration';
+import { toWorkoutConfig, createSessionRepository } from '@/src/lib/integration';
+import { PersistenceSubscriber } from '@/src/lib/session';
 import { MediaRuntime, createMediaRuntimePlugin } from '@/src/lib/media';
 
 export interface CoachedWorkoutSettings {
@@ -24,6 +25,8 @@ export interface UseCoachedWorkoutReturn {
   pause: () => void;
   resume: () => void;
   quit: () => void;
+  /** The live session id (for attaching a rating on the finish screen). */
+  getSessionId: () => string | null;
 }
 
 type Controller = HostRuntime['controller'];
@@ -94,6 +97,22 @@ export function useCoachedWorkout(
       subscribers: [coach, createMediaRuntimePlugin(media)],
     });
 
+    // Persistence: the existing Session Runtime, wired as an event subscriber.
+    // It checkpoints the active session and moves a completed one to History.
+    // Registered before start() so it catches WORKOUT_STARTED. The coach pack is
+    // captured now so History can show who coached this session.
+    const persistence = new PersistenceSubscriber(
+      createSessionRepository(),
+      () => runtime.controller.getSession(),
+      {
+        // Wall-clock so History can show the real completed date; fine for the
+        // 1s checkpoint debounce.
+        now: () => Date.now(),
+        meta: () => ({ rating: null, notes: null, coach: s.coachPack }),
+      },
+    );
+    runtime.eventBus.register(persistence);
+
     mediaRef.current = media;
     runtimeRef.current = runtime;
     setController(runtime.controller);
@@ -139,6 +158,10 @@ export function useCoachedWorkout(
   const pause = useCallback(() => runtimeRef.current?.controller.pause(), []);
   const resume = useCallback(() => runtimeRef.current?.controller.resume(), []);
   const quit = useCallback(() => runtimeRef.current?.controller.cancel(), []);
+  const getSessionId = useCallback(
+    () => runtimeRef.current?.controller.getSession().id ?? null,
+    [],
+  );
 
-  return { snapshot, isSupported, pause, resume, quit };
+  return { snapshot, isSupported, pause, resume, quit, getSessionId };
 }

@@ -24,8 +24,8 @@ export interface PersistenceSubscriberOptions {
   readonly now?: NowFn;
   readonly minIntervalMs?: number;
   readonly diagnostics?: SessionDiagnostics;
-  /** Supplies subjective rating/notes at checkpoint time (default: none). */
-  readonly meta?: () => { rating: number | null; notes: string | null };
+  /** Supplies subjective rating/notes/coach at checkpoint time (default: none). */
+  readonly meta?: () => { rating: number | null; notes: string | null; coach?: string | null };
   readonly priority?: number;
 }
 
@@ -48,7 +48,7 @@ export class PersistenceSubscriber implements Subscriber {
   private readonly now: NowFn;
   private readonly minIntervalMs: number;
   private readonly diagnostics?: SessionDiagnostics;
-  private readonly meta?: () => { rating: number | null; notes: string | null };
+  private readonly meta?: () => { rating: number | null; notes: string | null; coach?: string | null };
 
   private lastWriteAt = Number.NEGATIVE_INFINITY;
 
@@ -78,8 +78,9 @@ export class PersistenceSubscriber implements Subscriber {
       case 'WORKOUT_RESUMED':
         return this.checkpoint(true); // forced: state-critical
       case 'WORKOUT_COMPLETED':
+        return this.finalize(); // completed → moves to history
       case 'WORKOUT_CANCELLED':
-        return this.finalize();
+        return this.discard(); // cancelled → discarded, never enters history
       default:
         return;
     }
@@ -112,12 +113,26 @@ export class PersistenceSubscriber implements Subscriber {
     }
   }
 
+  /**
+   * A cancelled workout is abandoned: drop the resumable active slot so it can't
+   * be resumed, and do NOT append it to history (History is completed training).
+   */
+  private async discard(): Promise<void> {
+    this.lastWriteAt = this.now();
+    try {
+      await this.repository.clearActive();
+    } catch (error) {
+      this.diagnostics?.recordStorageError('discard', error);
+    }
+  }
+
   private toRecord(): SessionRecord {
-    const meta = this.meta?.() ?? { rating: null, notes: null };
+    const meta = this.meta?.() ?? { rating: null, notes: null, coach: null };
     return {
       session: this.getSession(),
       rating: meta.rating,
       notes: meta.notes,
+      coach: meta.coach ?? null,
       savedAt: this.now(),
     };
   }
