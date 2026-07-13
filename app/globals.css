@@ -1,0 +1,361 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+@import 'shadcn/tailwind.css';
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --color-foreground: var(--foreground);
+  --color-background: var(--background);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+
+  /* Semantic state colors — the workout's phases have their own identity.
+     Never color-only: every state also carries a text label in the UI. */
+  --color-work: var(--work);
+  --color-work-foreground: var(--work-foreground);
+  --color-rest: var(--rest);
+  --color-rest-foreground: var(--rest-foreground);
+  --color-push: var(--push);
+  --color-push-foreground: var(--push-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+}
+
+:root {
+  color-scheme: dark;
+  --background: oklch(0.08 0 0);
+  --foreground: oklch(0.95 0 0);
+  --card: oklch(0.12 0 0);
+  --card-foreground: oklch(0.95 0 0);
+  --popover: oklch(0.12 0 0);
+  --popover-foreground: oklch(0.95 0 0);
+  --primary: oklch(0.95 0 0);
+  --primary-foreground: oklch(0.08 0 0);
+  --secondary: oklch(0.18 0 0);
+  --secondary-foreground: oklch(0.95 0 0);
+  --muted: oklch(0.25 0 0);
+  --muted-foreground: oklch(0.65 0 0);
+  --accent: oklch(0.22 0.15 25);
+  --accent-foreground: oklch(0.95 0 0);
+  --destructive: oklch(0.7 0.2 22.2);
+  --border: oklch(0.2 0 0);
+  --input: oklch(0.15 0 0);
+  --ring: oklch(0.5 0 0);
+  --chart-1: oklch(0.22 0.15 25);
+  --chart-2: oklch(0.6 0.15 25);
+  --chart-3: oklch(0.7 0.15 25);
+  --chart-4: oklch(0.5 0 0);
+  --chart-5: oklch(0.3 0 0);
+  --radius: 0.75rem;
+  --sidebar: oklch(0.12 0 0);
+  --sidebar-foreground: oklch(0.95 0 0);
+  --sidebar-primary: oklch(0.22 0.15 25);
+  --sidebar-primary-foreground: oklch(0.95 0 0);
+  --sidebar-accent: oklch(0.25 0 0);
+  --sidebar-accent-foreground: oklch(0.95 0 0);
+  --sidebar-border: oklch(0.2 0 0);
+  --sidebar-ring: oklch(0.5 0 0);
+
+  /* --- Phase state palette -------------------------------------------------
+     work:  calm, bright neutral — the athlete is in the round, focus is on
+            the bag, not the screen.
+     rest:  cool, recovering — visibly, unmistakably different from work.
+     push:  the corner red — final-30 / countdown urgency only. Used sparingly
+            so it always means "now".
+     success: the honest close.                                              */
+  --work: oklch(0.96 0 0);
+  --work-foreground: oklch(0.08 0 0);
+  --rest: oklch(0.72 0.11 195);
+  --rest-foreground: oklch(0.12 0.02 220);
+  --push: oklch(0.62 0.21 25);
+  --push-foreground: oklch(0.98 0 0);
+  --success: oklch(0.74 0.15 155);
+  --success-foreground: oklch(0.1 0.02 160);
+
+  /* Elevation — soft, physical, never a "material" drop shadow. Premium kit,
+     not a dashboard. */
+  --elevation-1: 0 1px 2px oklch(0 0 0 / 0.4);
+  --elevation-2: 0 8px 24px -8px oklch(0 0 0 / 0.55);
+  --elevation-focus: 0 0 0 3px oklch(0.62 0.21 25 / 0.35);
+
+  /* Motion tokens — quiet, confident timings. */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --dur-fast: 140ms;
+  --dur-base: 240ms;
+  --dur-slow: 420ms;
+}
+
+.dark {
+  color-scheme: dark;
+  --background: oklch(0.08 0 0);
+  --foreground: oklch(0.95 0 0);
+  --card: oklch(0.12 0 0);
+  --card-foreground: oklch(0.95 0 0);
+  --popover: oklch(0.12 0 0);
+  --popover-foreground: oklch(0.95 0 0);
+  --primary: oklch(0.95 0 0);
+  --primary-foreground: oklch(0.08 0 0);
+  --secondary: oklch(0.18 0 0);
+  --secondary-foreground: oklch(0.95 0 0);
+  --muted: oklch(0.25 0 0);
+  --muted-foreground: oklch(0.65 0 0);
+  --accent: oklch(0.22 0.15 25);
+  --accent-foreground: oklch(0.95 0 0);
+  --destructive: oklch(0.7 0.2 22.2);
+  --border: oklch(0.2 0 0);
+  --input: oklch(0.15 0 0);
+  --ring: oklch(0.5 0 0);
+  --chart-1: oklch(0.22 0.15 25);
+  --chart-2: oklch(0.6 0.15 25);
+  --chart-3: oklch(0.7 0.15 25);
+  --chart-4: oklch(0.5 0 0);
+  --chart-5: oklch(0.3 0 0);
+  --sidebar: oklch(0.12 0 0);
+  --sidebar-foreground: oklch(0.95 0 0);
+  --sidebar-primary: oklch(0.22 0.15 25);
+  --sidebar-primary-foreground: oklch(0.95 0 0);
+  --sidebar-accent: oklch(0.25 0 0);
+  --sidebar-accent-foreground: oklch(0.95 0 0);
+  --sidebar-border: oklch(0.2 0 0);
+  --sidebar-ring: oklch(0.5 0 0);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not(.light) {
+    color-scheme: dark;
+    --background: oklch(0.08 0 0);
+    --foreground: oklch(0.95 0 0);
+    --card: oklch(0.12 0 0);
+    --card-foreground: oklch(0.95 0 0);
+    --popover: oklch(0.12 0 0);
+    --popover-foreground: oklch(0.95 0 0);
+    --primary: oklch(0.95 0 0);
+    --primary-foreground: oklch(0.08 0 0);
+    --secondary: oklch(0.18 0 0);
+    --secondary-foreground: oklch(0.95 0 0);
+    --muted: oklch(0.25 0 0);
+    --muted-foreground: oklch(0.65 0 0);
+    --accent: oklch(0.22 0.15 25);
+    --accent-foreground: oklch(0.95 0 0);
+    --destructive: oklch(0.7 0.2 22.2);
+    --border: oklch(0.2 0 0);
+    --input: oklch(0.15 0 0);
+    --ring: oklch(0.5 0 0);
+    --chart-1: oklch(0.22 0.15 25);
+    --chart-2: oklch(0.6 0.15 25);
+    --chart-3: oklch(0.7 0.15 25);
+    --chart-4: oklch(0.5 0 0);
+    --chart-5: oklch(0.3 0 0);
+    --sidebar: oklch(0.12 0 0);
+    --sidebar-foreground: oklch(0.95 0 0);
+    --sidebar-primary: oklch(0.22 0.15 25);
+    --sidebar-primary-foreground: oklch(0.95 0 0);
+    --sidebar-accent: oklch(0.25 0 0);
+    --sidebar-accent-foreground: oklch(0.95 0 0);
+    --sidebar-border: oklch(0.2 0 0);
+    --sidebar-ring: oklch(0.5 0 0);
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+    /* Hands-free ergonomics: never let the OS text-scale break the timer,
+       but respect it everywhere text is read normally. */
+    text-rendering: optimizeLegibility;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* ---------------------------------------------------------------------------
+     Timer typography — sized to be read from 2–4 m with a phone on the floor.
+     Fluid: fills a phone in portrait, still fits landscape without clipping.
+     Tabular figures so digits never shift width as the count ticks down.
+  ----------------------------------------------------------------------------*/
+  .timer-hero {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: 'tnum' 1;
+    @apply font-mono font-bold tracking-tighter tabular-nums;
+    /* Floor lowered to 4.5rem so short landscape viewports don't crush the rest
+       of the column; portrait is unaffected (it uses 34vmin of the width). */
+    font-size: clamp(4.5rem, 34vmin, 18rem);
+    line-height: 0.9;
+  }
+
+  .timer-xl {
+    font-variant-numeric: tabular-nums;
+    @apply text-9xl font-bold font-mono tracking-tight tabular-nums;
+  }
+
+  .timer-lg {
+    font-variant-numeric: tabular-nums;
+    @apply font-mono font-bold tracking-tight tabular-nums;
+    font-size: clamp(4rem, 20vmin, 8rem);
+    line-height: 0.95;
+  }
+
+  .round-display {
+    @apply text-6xl font-bold tracking-tight tabular-nums;
+  }
+
+  /* Eyebrow: the small, quiet, wide label above a value. Used everywhere for
+     hierarchy without visual noise. */
+  .eyebrow {
+    @apply text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground;
+  }
+
+  .coaching-cue {
+    @apply text-2xl font-semibold leading-snug tracking-tight;
+    text-wrap: balance;
+  }
+}
+
+/* -----------------------------------------------------------------------------
+   Motion language — subtle, focus-reinforcing. Every animation degrades to
+   nothing under prefers-reduced-motion (see the guard at the bottom).
+------------------------------------------------------------------------------*/
+@layer utilities {
+  /* Full-height screens that respect notches and home indicators — essential
+     for a phone laid on the floor. */
+  .screen {
+    min-height: 100svh;
+    padding-left: max(env(safe-area-inset-left), 0px);
+    padding-right: max(env(safe-area-inset-right), 0px);
+    padding-bottom: max(env(safe-area-inset-bottom), 0px);
+    padding-top: max(env(safe-area-inset-top), 0px);
+  }
+
+  .elevate-1 {
+    box-shadow: var(--elevation-1);
+  }
+  .elevate-2 {
+    box-shadow: var(--elevation-2);
+  }
+
+  /* A cue swapping in — brief, quiet upward fade. */
+  .animate-cue-in {
+    animation: cue-in var(--dur-base) var(--ease-out) both;
+  }
+  /* Whole-screen phase change (round ↔ rest). */
+  .animate-phase-in {
+    animation: phase-in var(--dur-slow) var(--ease-out) both;
+  }
+  /* Countdown emphasis — a single calm pulse per second, not a strobe. */
+  .animate-count-pulse {
+    animation: count-pulse 1s var(--ease-out) infinite;
+  }
+  /* Rest "breathing" ring — paces recovery breathing, ~5.5s cycle. */
+  .animate-breathe {
+    animation: breathe 5500ms var(--ease-in-out) infinite;
+  }
+  .animate-rise {
+    animation: rise var(--dur-slow) var(--ease-out) both;
+  }
+}
+
+@keyframes cue-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes phase-in {
+  from {
+    opacity: 0;
+    transform: scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes count-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  18% {
+    transform: scale(1.05);
+    opacity: 0.92;
+  }
+}
+
+@keyframes breathe {
+  0%,
+  100% {
+    transform: scale(0.94);
+    opacity: 0.55;
+  }
+  50% {
+    transform: scale(1.06);
+    opacity: 0.9;
+  }
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* The whole motion system collapses for anyone who asks for calm. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}

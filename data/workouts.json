@@ -1,0 +1,395 @@
+{
+  "workouts": [
+    {
+      "id": "southpaw-fundamentals",
+      "name": "Southpaw Fundamentals",
+      "description": "Master stance, footwork, and basic combos from southpaw.",
+      "stance": "southpaw",
+      "roundCount": 3,
+      "roundDuration": 180,
+      "restDuration": 60,
+      "totalDuration": 720,
+      "difficulty": "beginner",
+      "rounds": [
+        {
+          "id": "round-1",
+          "name": "Stance & Footwork",
+          "drillDuration": 180,
+          "restDuration": 60,
+          "currentDrill": "Get comfortable in your stance",
+          "currentCue": {
+            "text": "Feet shoulder-width apart",
+            "timing": "start"
+          },
+          "nextCue": {
+            "text": "Circle the bag with footwork",
+            "timing": "middle"
+          },
+          "coachingCues": [
+            {
+              "text": "Feet shoulder-width apart",
+              "timing": "start"
+            },
+            {
+              "text": "Knees slightly bent",
+              "timing": "start"
+            },
+            {
+              "text": "Circle the bag with footwork",
+              "timing": "middle"
+            },
+            {
+              "text": "Stay light on your feet",
+              "timing": "end"
+            }
+          ]
+        },
+        {
+          "id": "round-2",
+          "name": "Basic Combinations",
+          "drillDuration": 180,
+          "restDuration": 60,
+          "currentDrill": "Throw basic combos",
+          "currentCue": {
+            "text": "Lead jab, cross",
+            "timing": "start"
+          },
+          "nextCue": {
+            "text": "Add lead hook",
+            "timing": "middle"
+          },
+          "coachingCues": [
+            {
+              "text": "Lead jab, cross",
+              "timing": "start"
+            },
+            {
+              "text": "Jab, cross, lead hook",
+              "timing": "middle"
+            },
+            {
+              "text": "Chain combinations together",
+              "timing": "end"
+            }
+          ]
+        },
+        {
+          "id": "round-3",
+          "name": "Rhythm & Speed",
+          "drillDuration": 180,
+          "restDuration": 60,
+          "currentDrill": "Increase pace and intensity",
+          "currentCue": {
+            "text": "Build rhythm gradually",
+            "timing": "start"
+          },
+          "nextCue": {
+            "text": "Max speed final 30 seconds",
+            "timing": "end"
+          },
+          "coachingCues": [
+            {
+              "text": "Build rhythm gradually",
+              "timing": "start"
+            },
+            {
+              "text": "Increase pace each minute",
+              "timing": "middle"
+            },
+            {
+              "text": "Max speed final 30 seconds",
+              "timing": "end"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "heavy-bag-cardio",
+      "name": "Heavy Bag Cardio",
+      "description": "High-intensity cardio workout to build endurance and power.",
+      "stance": "orthodox",
+      "roundCount": 5,
+      "roundDuration": 120,
+      "restDuration": 45,
+      "totalDuration": 825,
+      "difficulty": "intermediate",
+      "rounds": [
+        {
+          "id": "round-1",
+          "name": "Warm-up",
+          "drillDuration": 120,
+          "restDuration": 45,
+          "currentDrill": "Easy pace, find rhythm",
+          "currentCue": {
+            "text": "Light jabs and crosses",
+            "timing": "start"
+          },
+          "nextCue": {
+            "text": "Gradually increase intensity",
+            "timing": "middle"
+          },
+          "coachingCues": [
+            {
+              "text": "Light jabs and crosses",
+              "timing": "start"
+            },
+            {
+              "text": "Add kicks if desired",
+              "timing": "middle"
+            },
+            {
+              "text": "Prepare for intensity",
+              "timing": "end"
+            }
+          ]
+        },
+        {
+          "id": "round-2",
+          "name": "Combination Drills",
+          "drillDuration": 120,
+          "restDuration": 45,
+          "currentDrill": "Fluid combinations at pace",
+          "currentCue": {
+            "text": "1-2-3 combinations",
+            "timing": "start"
+          },
+          "nextCue": {
+            "text": "Mix in hooks and uppercuts",
+            "timing": "middle"
+          },
+          "coachingCues": [
+            {
+              "text": "1-2-3 combinations",
+              "timing": "start"
+            },
+            {
+              "text": "Mix in hooks and uppercuts",
+              "timing": "middle"
+            },
+            {
+              "text": "Stay explosive",
+              "timing": "end"
+            }
+          ]
+        },
+        {
+          "id": "round-3",
+          "name": "High Intensity",
+          "drillDuration": 120,
+          "restDuration": 45,
+          "currentDrill": "Maximum pace and power",
+          "currentCue": {
+            "text": "Go hard for 2 minutes",
+            "timing": "start"
+          },
+          "nextCue": {
+            "text": "Last 20 seconds: MAXIMUM",
+            "timing": "end"
+          },
+          "coachingCues": [
+            {
+              "text": "Go hard for 2 minutes",
+              "timing": "start"
+            },
+            {
+              "text": "Push your pace",
+              "timing": "middle"
+            },
+            {
+              "text": "Last 20 seconds: MAXIMUM",
+              "timing": "end"
+            }
+          ]
+        },
+        {
+          "id": "round-4",
+          "name": "Recovery Round",
+          "drillDuration": 120,
+          "restDuration": 45,
+          "currentDrill": "Controlled pace, focus on form",
+          "currentCue": {
+            "text": "Dial it back, stay focused",
+            "timing": "start"
+          },
+          "nextCue": {
+            "text": "Build intensity toward end",
+            "timing": "middle"
+          },
+          "coachingCues": [
+            {
+              "text": "Dial it back, stay focused",
+              "timing": "start"
+            },
+            {
+              "text": "Maintain good form",
+              "timing": "middle"
+            },
+            {
+              "text": "Build intensity toward end",
+              "timing": "end"
+            }
+          ]
+        },
+        {
+          "id": "round-5",
+          "name": "Final Push",
+          "drillDuration": 120,
+          "restDuration": 45,
+          "currentDrill": "Leave everything on the bag",
+          "currentCue": {
+            "text": "This is the final round",
+            "timing": "start"
+          },
+          "nextCue": {
+            "text": "Give it everything you have",
+            "timing": "middle"
+          },
+          "coachingCues": [
+            {
+              "text": "This is the final round",
+              "timing": "start"
+            },
+            {
+              "text": "Give it everything you have",
+              "timing": "middle"
+            },
+            {
+              "text": "Finish strong",
+              "timing": "end"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "footwork-mastery",
+      "name": "Footwork Mastery",
+      "description": "Advanced footwork drills with angle creation and movement.",
+      "stance": "both",
+      "roundCount": 4,
+      "roundDuration": 150,
+      "restDuration": 45,
+      "totalDuration": 780,
+      "difficulty": "advanced",
+      "rounds": [
+        {
+          "id": "round-1",
+          "name": "Linear Movement",
+          "drillDuration": 150,
+          "restDuration": 45,
+          "currentDrill": "Forward and backward steps",
+          "currentCue": {
+            "text": "Step forward, throw 1-2",
+            "timing": "start"
+          },
+          "nextCue": {
+            "text": "Step back, create distance",
+            "timing": "middle"
+          },
+          "coachingCues": [
+            {
+              "text": "Step forward, throw 1-2",
+              "timing": "start"
+            },
+            {
+              "text": "Step back, create distance",
+              "timing": "middle"
+            },
+            {
+              "text": "Fluid motion, no hesitation",
+              "timing": "end"
+            }
+          ]
+        },
+        {
+          "id": "round-2",
+          "name": "Lateral Movement",
+          "drillDuration": 150,
+          "restDuration": 45,
+          "currentDrill": "Circle the bag, throw angles",
+          "currentCue": {
+            "text": "Side step left, throw combos",
+            "timing": "start"
+          },
+          "nextCue": {
+            "text": "Side step right, maintain rhythm",
+            "timing": "middle"
+          },
+          "coachingCues": [
+            {
+              "text": "Side step left, throw combos",
+              "timing": "start"
+            },
+            {
+              "text": "Side step right, maintain rhythm",
+              "timing": "middle"
+            },
+            {
+              "text": "Never square up",
+              "timing": "end"
+            }
+          ]
+        },
+        {
+          "id": "round-3",
+          "name": "Angles & Evasion",
+          "drillDuration": 150,
+          "restDuration": 45,
+          "currentDrill": "Create angles, slip and roll",
+          "currentCue": {
+            "text": "Slip, throw counter",
+            "timing": "start"
+          },
+          "nextCue": {
+            "text": "Roll shoulder, lateral movement",
+            "timing": "middle"
+          },
+          "coachingCues": [
+            {
+              "text": "Slip, throw counter",
+              "timing": "start"
+            },
+            {
+              "text": "Roll shoulder, lateral movement",
+              "timing": "middle"
+            },
+            {
+              "text": "Precision over speed",
+              "timing": "end"
+            }
+          ]
+        },
+        {
+          "id": "round-4",
+          "name": "Combination Flow",
+          "drillDuration": 150,
+          "restDuration": 45,
+          "currentDrill": "Flow between angles and combos",
+          "currentCue": {
+            "text": "Integrate all footwork patterns",
+            "timing": "start"
+          },
+          "nextCue": {
+            "text": "Smooth transitions at pace",
+            "timing": "middle"
+          },
+          "coachingCues": [
+            {
+              "text": "Integrate all footwork patterns",
+              "timing": "start"
+            },
+            {
+              "text": "Smooth transitions at pace",
+              "timing": "middle"
+            },
+            {
+              "text": "Flow and rhythm",
+              "timing": "end"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
