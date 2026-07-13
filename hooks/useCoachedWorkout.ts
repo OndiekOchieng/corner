@@ -4,10 +4,21 @@ import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from '
 import type { Workout, CoachPack } from '@/types/workout';
 import type { WorkoutSnapshot } from '@/src/lib/engine';
 import { createHostRuntime, type HostRuntime } from '@/src/lib/host';
-import { createCoachRuntimePlugin } from '@/src/lib/coaching';
+import { createCoachRuntimePlugin, type CoachRuntimePlugin, type CoachDiagnosticsSnapshot } from '@/src/lib/coaching';
 import { toWorkoutConfig, createSessionRepository } from '@/src/lib/integration';
 import { PersistenceSubscriber } from '@/src/lib/session';
-import { MediaRuntime, createMediaRuntimePlugin, type MediaDiagnosticsSnapshot } from '@/src/lib/media';
+import {
+  MediaRuntime,
+  createMediaRuntimePlugin,
+  type MediaDiagnosticsSnapshot,
+  type SpeechTraceSnapshot,
+} from '@/src/lib/media';
+
+/** Combined speech-pipeline trace for the dev overlay (PR-014). */
+export interface SpeechPipelineTrace {
+  coach: CoachDiagnosticsSnapshot | null;
+  media: SpeechTraceSnapshot | null;
+}
 
 export interface CoachedWorkoutSettings {
   speechEnabled: boolean;
@@ -29,6 +40,8 @@ export interface UseCoachedWorkoutReturn {
   getSessionId: () => string | null;
   /** Live Media Runtime diagnostics (dev-only overlay). */
   getMediaDiagnostics: () => MediaDiagnosticsSnapshot | null;
+  /** Live speech-pipeline trace: coach + speech boundary counters (dev-only). */
+  getSpeechTrace: () => SpeechPipelineTrace;
 }
 
 type Controller = HostRuntime['controller'];
@@ -74,6 +87,7 @@ export function useCoachedWorkout(
 ): UseCoachedWorkoutReturn {
   const runtimeRef = useRef<HostRuntime | null>(null);
   const mediaRef = useRef<MediaRuntime | null>(null);
+  const coachRef = useRef<CoachRuntimePlugin | null>(null);
   const settingsRef = useRef(settings);
   settingsRef.current = settings;
 
@@ -116,6 +130,7 @@ export function useCoachedWorkout(
     runtime.eventBus.register(persistence);
 
     mediaRef.current = media;
+    coachRef.current = coach;
     runtimeRef.current = runtime;
     setController(runtime.controller);
     setIsSupported(media.capabilities().speech);
@@ -133,6 +148,7 @@ export function useCoachedWorkout(
       media.dispose();
       runtimeRef.current = null;
       mediaRef.current = null;
+      coachRef.current = null;
       setController(null);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -165,6 +181,22 @@ export function useCoachedWorkout(
     [],
   );
   const getMediaDiagnostics = useCallback(() => mediaRef.current?.diagnostics() ?? null, []);
+  const getSpeechTrace = useCallback<() => SpeechPipelineTrace>(
+    () => ({
+      coach: coachRef.current?.diagnostics() ?? null,
+      media: mediaRef.current?.speechTrace() ?? null,
+    }),
+    [],
+  );
 
-  return { snapshot, isSupported, pause, resume, quit, getSessionId, getMediaDiagnostics };
+  return {
+    snapshot,
+    isSupported,
+    pause,
+    resume,
+    quit,
+    getSessionId,
+    getMediaDiagnostics,
+    getSpeechTrace,
+  };
 }

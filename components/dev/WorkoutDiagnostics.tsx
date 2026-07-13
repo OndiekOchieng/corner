@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import type { MediaDiagnosticsSnapshot } from '@/src/lib/media';
 import type { WorkoutSnapshot } from '@/src/lib/engine';
+import type { SpeechPipelineTrace } from '@/hooks/useCoachedWorkout';
 
 /** Development-only. Stripped from production builds (see the guard + mount gate). */
 const IS_DEV = process.env.NODE_ENV !== 'production';
@@ -45,6 +46,7 @@ function Row({ k, v }: { k: string; v: string }) {
 
 interface Props {
   getMediaDiagnostics: () => MediaDiagnosticsSnapshot | null;
+  getSpeechTrace: () => SpeechPipelineTrace;
   workout: WorkoutSnapshot;
 }
 
@@ -53,19 +55,26 @@ interface Props {
  * capabilities, audio/speech/wake-lock state, voices, and the live workout state.
  * Polls at ~2 Hz. Never rendered in production.
  */
-export function WorkoutDiagnostics({ getMediaDiagnostics, workout }: Props) {
+export function WorkoutDiagnostics({ getMediaDiagnostics, getSpeechTrace, workout }: Props) {
   const [media, setMedia] = useState<MediaDiagnosticsSnapshot | null>(null);
+  const [trace, setTrace] = useState<SpeechPipelineTrace | null>(null);
   const [open, setOpen] = useState(true);
 
   useEffect(() => {
     if (!IS_DEV) return;
-    const tick = () => setMedia(getMediaDiagnostics());
+    const tick = () => {
+      setMedia(getMediaDiagnostics());
+      setTrace(getSpeechTrace());
+    };
     tick();
     const id = setInterval(tick, 500);
     return () => clearInterval(id);
-  }, [getMediaDiagnostics]);
+  }, [getMediaDiagnostics, getSpeechTrace]);
 
   if (!IS_DEV) return null;
+
+  const svc = trace?.media?.service ?? null;
+  const coach = trace?.coach ?? null;
 
   return (
     <div className="fixed bottom-2 left-2 z-50 max-w-[92vw] rounded-lg bg-black/85 p-2 font-mono text-[10px] leading-tight text-white/90 ring-1 ring-white/20">
@@ -96,6 +105,32 @@ export function WorkoutDiagnostics({ getMediaDiagnostics, workout }: Props) {
           ) : (
             <Row k="media" v="(initializing…)" />
           )}
+
+          {/* Speech-pipeline trace — proves where a coaching line stops. */}
+          <div className="mt-1 border-t border-white/15 pt-1">
+            {coach && (
+              <Row
+                k="coach"
+                v={`produced:${coach.actionsGenerated} spoken:${coach.actionsSpoken} discarded:${coach.actionsDiscarded} q:${coach.queueDepth}`}
+              />
+            )}
+            {svc ? (
+              <>
+                <Row k="service" v={`#${svc.instanceId} speak():${svc.speakCalls} → synth.speak():${svc.synthSpeakCalls}`} />
+                <Row
+                  k="utterance"
+                  v={`onstart:${svc.started} onend:${svc.ended} onerror:${svc.errors} · qlen:${svc.queueLength}`}
+                />
+                <Row k="current" v={svc.currentText ?? '—'} />
+                <Row
+                  k="ids"
+                  v={`mgr#${trace?.media?.speechManagerId ?? '?'} · svc#${trace?.media?.speechServiceId ?? '?'} · ${svc.speaking ? 'speaking' : 'idle'}${svc.paused ? '·paused' : ''}`}
+                />
+              </>
+            ) : (
+              <Row k="service" v="(no SpeechService)" />
+            )}
+          </div>
         </div>
       )}
     </div>

@@ -151,6 +151,37 @@ describe('SpeechService', () => {
     });
   });
 
+  describe('pipeline trace (stats)', () => {
+    it('counts speak() → synth.speak() → onstart → onend across the boundary', () => {
+      service.speak('a');
+      let s = service.stats();
+      expect(s.instanceId).toBeGreaterThan(0);
+      expect(s.speakCalls).toBe(1);
+      expect(s.synthSpeakCalls).toBe(1);
+      expect(s.started).toBe(1); // the (mock) browser fired onstart
+      expect(s.ended).toBe(0);
+      expect(s.errors).toBe(0);
+
+      synth.finishCurrent(); // → onend
+      s = service.stats();
+      expect(s.ended).toBe(1);
+    });
+
+    it('counts a dropped speak() (disabled) but never reaches the browser', () => {
+      service.setEnabled(false);
+      service.speak('nope');
+      const s = service.stats();
+      expect(s.speakCalls).toBe(1);
+      expect(s.synthSpeakCalls).toBe(0); // the break would be BEFORE the browser
+    });
+
+    it('records an utterance error', () => {
+      service.speak('a');
+      synth.current?.onerror?.({ error: 'interrupted' });
+      expect(service.stats().errors).toBe(1);
+    });
+  });
+
   describe('utterance configuration', () => {
     it('applies rate, pitch, and volume to utterances', () => {
       service.setRate(1.5);

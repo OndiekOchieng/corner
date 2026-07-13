@@ -58,6 +58,33 @@ export interface SpeechServiceConfig {
 
 type VoicesListener = (voices: SpeechSynthesisVoice[]) => void;
 
+/**
+ * Development-only boundary trace. Call sites gate on an INLINE
+ * `process.env.NODE_ENV` check so the compiler folds it to dead code and strips
+ * both the call and its string arguments from production (an intermediate const
+ * is not reliably folded).
+ */
+function trace(...args: unknown[]): void {
+  console.log('[SpeechService]', ...args);
+}
+
+let instanceCounter = 0;
+
+/** A snapshot of the speech boundary — proves whether speak() reaches the browser. */
+export interface SpeechServiceStats {
+  readonly instanceId: number;
+  readonly speakCalls: number;
+  readonly synthSpeakCalls: number;
+  readonly started: number;
+  readonly ended: number;
+  readonly errors: number;
+  readonly queueLength: number;
+  readonly currentText: string | null;
+  readonly selectedVoice: string | null;
+  readonly speaking: boolean;
+  readonly paused: boolean;
+}
+
 const clamp = (value: number, min: number, max: number) =>
   Math.min(Math.max(value, min), max);
 
@@ -93,6 +120,14 @@ export class SpeechService {
 
   private voices: SpeechSynthesisVoice[] = [];
   private voicesListeners = new Set<VoicesListener>();
+
+  /** Stable identity + boundary counters for the speech-pipeline trace (PR-014). */
+  readonly instanceId = ++instanceCounter;
+  private speakCalls = 0;
+  private synthSpeakCalls = 0;
+  private startedCount = 0;
+  private endedCount = 0;
+  private errorCount = 0;
 
   constructor(config: SpeechServiceConfig = {}) {
     this.synth = config.synth !== undefined ? config.synth : resolveDefaultSynth();
@@ -192,10 +227,15 @@ export class SpeechService {
    * never overlap. No-op when speech is unsupported, disabled, or empty.
    */
   speak(text: string): void {
-    if (!this.isSupported() || !this.enabled) return;
+    this.speakCalls += 1;
+    if (!this.isSupported() || !this.enabled) {
+      process.env.NODE_ENV === 'development' && trace(`#${this.instanceId} speak() DROPPED (supported=${this.isSupported()} enabled=${this.enabled})`, text);
+      return;
+    }
     const trimmed = text?.trim();
     if (!trimmed) return;
 
+    process.env.NODE_ENV === 'development' && trace(`#${this.instanceId} speak() queued:`, trimmed);
     const utterance = this.buildUtterance(trimmed);
     this.queue.push(utterance);
     this.pump();
@@ -255,14 +295,31 @@ export class SpeechService {
     this.current = next;
     this.speaking = true;
 
-    next.onend = () => this.handleUtteranceDone();
-    next.onerror = () => this.handleUtteranceDone();
+    // Instrument the browser boundary — this is where "speak() called but nothing
+    // heard" is proven: synth.speak fires but onstart never does.
+    next.onstart = () => {
+      this.startedCount += 1;
+      process.env.NODE_ENV === 'development' && trace(`#${this.instanceId} utterance ONSTART:`, next.text);
+    };
+    next.onend = () => {
+      this.endedCount += 1;
+      process.env.NODE_ENV === 'development' && trace(`#${this.instanceId} utterance ONEND:`, next.text);
+      this.handleUtteranceDone();
+    };
+    next.onerror = (event?: unknown) => {
+      this.errorCount += 1;
+      // Log the raw browser error payload (dev only).
+      process.env.NODE_ENV === 'development' && trace(`#${this.instanceId} utterance ONERROR:`, next.text, event);
+      this.handleUtteranceDone();
+    };
 
+    this.synthSpeakCalls += 1;
+    process.env.NODE_ENV === 'development' && trace(`#${this.instanceId} synth.speak():`, next.text, `(voice=${this.selectedVoice?.name ?? 'default'})`);
     this.synth.speak(next);
-    // Chrome (desktop) intermittently suspends the synthesis queue, leaving speech
-    // silent. resume() is a no-op when nothing is paused, so this safely unsticks
-    // Chrome without affecting other browsers.
-    this.synth.resume();
+    // Only nudge when the browser genuinely suspended the queue (Chrome's "stuck
+    // paused" bug). Unconditionally resuming a fresh utterance can interfere on
+    // some engines, so gate it on the actual paused state.
+    if (this.synth.paused) this.synth.resume();
   }
 
   /**
@@ -274,6 +331,23 @@ export class SpeechService {
     if (!this.synth) return;
     this.loadVoices();
     this.synth.resume();
+  }
+
+  /** Boundary counters for the speech-pipeline trace (dev diagnostics). */
+  stats(): SpeechServiceStats {
+    return {
+      instanceId: this.instanceId,
+      speakCalls: this.speakCalls,
+      synthSpeakCalls: this.synthSpeakCalls,
+      started: this.startedCount,
+      ended: this.endedCount,
+      errors: this.errorCount,
+      queueLength: this.queue.length,
+      currentText: this.current?.text ?? null,
+      selectedVoice: this.selectedVoice?.name ?? null,
+      speaking: this.speaking,
+      paused: this.paused,
+    };
   }
 
   private handleUtteranceDone(): void {

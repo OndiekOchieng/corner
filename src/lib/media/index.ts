@@ -59,7 +59,12 @@ export {
   type MediaRuntimeDeps,
   type VisibilityLike,
   type GestureTargetLike,
+  type SpeechTraceSnapshot,
 } from './MediaRuntime';
+
+export type { SpeechServiceStats } from './SpeechManager';
+
+export { primeSpeechFromGesture } from './prime';
 
 export {
   MediaRuntimePlugin,

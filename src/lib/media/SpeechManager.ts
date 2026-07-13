@@ -8,6 +8,9 @@
  */
 
 import type { SpeechSink } from '../coaching';
+import type { SpeechServiceStats } from '@/lib/speech/SpeechService';
+
+export type { SpeechServiceStats };
 
 /** The subset of SpeechService the manager depends on (structural — no import). */
 export interface SpeechEngine {
@@ -28,6 +31,9 @@ export interface SpeechEngine {
   warm?(): void;
   /** Optional: the currently selected voice (for diagnostics). */
   getSelectedVoice?(): { name: string } | null;
+  /** Optional: stable instance id + boundary counters (speech-pipeline trace). */
+  readonly instanceId?: number;
+  stats?(): SpeechServiceStats;
 }
 
 export interface SpeechSettings {
@@ -38,9 +44,13 @@ export interface SpeechSettings {
   readonly voiceURI: string | null;
 }
 
+let speechManagerCounter = 0;
+
 export class SpeechManager {
   private voicesReady = false;
   private readonly unsubscribe: () => void;
+  /** Stable identity for the pipeline trace (proves a single active manager). */
+  readonly instanceId = ++speechManagerCounter;
 
   constructor(private readonly engine: SpeechEngine) {
     this.voicesReady = this.engine.getVoices().length > 0;
@@ -71,6 +81,14 @@ export class SpeechManager {
   warm(): void {
     this.engine.warm?.();
     if (this.engine.getVoices().length > 0) this.voicesReady = true;
+  }
+
+  /** The underlying SpeechService id + boundary counters (pipeline trace). */
+  serviceId(): number | null {
+    return this.engine.instanceId ?? null;
+  }
+  serviceStats(): SpeechServiceStats | null {
+    return this.engine.stats?.() ?? null;
   }
 
   /** The render port handed to the Coach Runtime. Degrades to no-ops safely. */

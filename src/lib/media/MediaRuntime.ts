@@ -17,9 +17,16 @@ import type { SpeechSink } from '../coaching';
 import { SpeechService } from '@/lib/speech/SpeechService';
 import { CapabilityService, resolveCapabilityEnv, type CapabilityEnv, type CapabilitySnapshot } from './CapabilityService';
 import { AudioManager, type AudioContextFactory, type AudioContextLike, type BellKind } from './AudioManager';
-import { SpeechManager, type SpeechEngine, type SpeechSettings } from './SpeechManager';
+import { SpeechManager, type SpeechEngine, type SpeechSettings, type SpeechServiceStats } from './SpeechManager';
 import { WakeLockManager, type WakeLockApiLike } from './WakeLockManager';
 import { MediaDiagnostics, type MediaDiagnosticsSnapshot } from './MediaDiagnostics';
+
+/** Speech-pipeline trace: instance identity + browser-boundary counters. */
+export interface SpeechTraceSnapshot {
+  readonly speechManagerId: number;
+  readonly speechServiceId: number | null;
+  readonly service: SpeechServiceStats | null;
+}
 
 /** Minimal visibility source (own, so Media doesn't depend on the Host layer). */
 export interface VisibilityLike {
@@ -229,6 +236,15 @@ export class MediaRuntime {
     this.diag.setVoicesReady(this.speech.isVoicesReady());
     this.diag.setSpeechAvailable(this.speech.isAvailable());
     return this.diag.snapshot();
+  }
+
+  /** Speech-pipeline trace: instance identity + browser-boundary counters (dev). */
+  speechTrace(): SpeechTraceSnapshot {
+    return {
+      speechManagerId: this.speech.instanceId,
+      speechServiceId: this.speech.serviceId(),
+      service: this.speech.serviceStats(),
+    };
   }
 
   dispose(): void {

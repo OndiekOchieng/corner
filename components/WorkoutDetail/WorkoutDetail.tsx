@@ -7,6 +7,7 @@ import { Workout } from '@/types/workout';
 import { formatRoundTime } from '@/lib/formatting';
 import { STANCE_LABELS, DIFFICULTY_COLORS } from '@/lib/constants';
 import { cn } from '@/lib/utils';
+import { primeSpeechFromGesture } from '@/src/lib/media';
 import { ChevronLeft, Play } from 'lucide-react';
 
 interface WorkoutDetailProps {
@@ -70,6 +71,7 @@ export function WorkoutDetail({ workout }: WorkoutDetailProps) {
         <div className="mx-auto w-full max-w-2xl">
           <Link
             href={`/workout/${workout.id}/active`}
+            onClick={primeSpeechFromGesture}
             className={cn(
               buttonVariants(),
               'h-16 w-full gap-2 rounded-2xl bg-primary text-lg font-semibold text-primary-foreground hover:bg-primary/90',

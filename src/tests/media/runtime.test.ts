@@ -121,6 +121,15 @@ describe('MediaRuntime — capabilities, diagnostics, degradation', () => {
     expect(d.browserCompatibility).toBe('full');
   });
 
+  it('exposes a speech-pipeline trace with a stable manager identity', () => {
+    const { media } = build();
+    const t = media.speechTrace();
+    expect(t.speechManagerId).toBeGreaterThan(0);
+    // The fake engine has no stats()/instanceId; the real SpeechService supplies them.
+    expect(t.service).toBeNull();
+    expect(t.speechManagerId).toBe(media.speechTrace().speechManagerId); // stable
+  });
+
   it('surfaces live audio/voice state for the compatibility audit', async () => {
     const ctx = new FakeAudioContext();
     const media = new MediaRuntime({
