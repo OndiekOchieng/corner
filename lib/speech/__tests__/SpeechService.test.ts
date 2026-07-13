@@ -136,6 +136,21 @@ describe('SpeechService', () => {
     });
   });
 
+  describe('warm (gesture priming — Chrome/iOS)', () => {
+    it('clears a suspended synthesis queue', () => {
+      synth.paused = true;
+      service.warm();
+      expect(synth.paused).toBe(false); // resumed
+    });
+
+    it('nudges resume after each utterance so Chrome does not go silent', () => {
+      synth.paused = true; // simulate Chrome suspending the queue
+      service.speak('a');
+      expect(synth.started).toEqual(['a']);
+      expect(synth.paused).toBe(false); // pump() called resume() after speak
+    });
+  });
+
   describe('utterance configuration', () => {
     it('applies rate, pitch, and volume to utterances', () => {
       service.setRate(1.5);

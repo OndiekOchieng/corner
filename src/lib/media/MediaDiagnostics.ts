@@ -25,6 +25,12 @@ export interface MediaDiagnosticsSnapshot {
   readonly visibility: VisibilityState;
   readonly bellsEnabled: boolean;
   readonly browserCompatibility: BrowserCompatibility;
+  /** Live: the AudioContext state ('none' | 'suspended' | 'running' | 'closed'). */
+  readonly audioState: string;
+  /** Live: number of loaded speech voices (0 until the browser populates them). */
+  readonly voiceCount: number;
+  /** Live: selected voice name, or null for the browser default. */
+  readonly selectedVoice: string | null;
 }
 
 export interface MediaDiagnosticsInit {
@@ -46,6 +52,9 @@ export class MediaDiagnostics {
   private autoplayFailures = 0;
   private visibility: VisibilityState;
   private bellsEnabled = true;
+  private audioState = 'none';
+  private voiceCount = 0;
+  private selectedVoice: string | null = null;
 
   constructor(init: MediaDiagnosticsInit) {
     this.capabilities = init.capabilities;
@@ -79,6 +88,15 @@ export class MediaDiagnostics {
   setBellsEnabled(v: boolean): void {
     this.bellsEnabled = v;
   }
+  setAudioState(v: string): void {
+    this.audioState = v;
+  }
+  setVoiceCount(v: number): void {
+    this.voiceCount = v;
+  }
+  setSelectedVoice(v: string | null): void {
+    this.selectedVoice = v;
+  }
 
   snapshot(): MediaDiagnosticsSnapshot {
     return {
@@ -93,6 +111,9 @@ export class MediaDiagnostics {
       visibility: this.visibility,
       bellsEnabled: this.bellsEnabled,
       browserCompatibility: this.grade(),
+      audioState: this.audioState,
+      voiceCount: this.voiceCount,
+      selectedVoice: this.selectedVoice,
     };
   }
 

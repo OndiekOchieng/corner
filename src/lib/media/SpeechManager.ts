@@ -24,6 +24,10 @@ export interface SpeechEngine {
   setVoice(voiceURI: string | null): void;
   getVoices(): readonly unknown[];
   onVoicesChanged(listener: (voices: readonly unknown[]) => void): () => void;
+  /** Optional: refresh voices + clear a suspended queue from a gesture (Chrome/iOS). */
+  warm?(): void;
+  /** Optional: the currently selected voice (for diagnostics). */
+  getSelectedVoice?(): { name: string } | null;
 }
 
 export interface SpeechSettings {
@@ -51,6 +55,22 @@ export class SpeechManager {
 
   isVoicesReady(): boolean {
     return this.voicesReady;
+  }
+
+  /** Number of loaded voices (0 until the browser populates them — async on Chrome). */
+  voiceCount(): number {
+    return this.engine.getVoices().length;
+  }
+
+  /** The selected voice name, or null for the browser default (diagnostics). */
+  selectedVoice(): string | null {
+    return this.engine.getSelectedVoice?.()?.name ?? null;
+  }
+
+  /** Warm speech from a user gesture (voice load + unstick). */
+  warm(): void {
+    this.engine.warm?.();
+    if (this.engine.getVoices().length > 0) this.voicesReady = true;
   }
 
   /** The render port handed to the Coach Runtime. Degrades to no-ops safely. */

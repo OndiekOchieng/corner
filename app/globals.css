@@ -256,6 +256,7 @@
   /* Full-height screens that respect notches and home indicators — essential
      for a phone laid on the floor. Edge-to-edge by design (the workout hero). */
   .screen {
+    min-height: 100vh; /* fallback for browsers without svh */
     min-height: 100svh;
     padding-left: max(env(safe-area-inset-left), 0px);
     padding-right: max(env(safe-area-inset-right), 0px);
@@ -268,6 +269,7 @@
      touches the edge; the vertical padding + safe-area frame the column. Content
      max-width + centering are applied by the PageContainer component. */
   .page-shell {
+    min-height: 100vh; /* fallback for browsers without svh */
     min-height: 100svh;
     padding-top: max(env(safe-area-inset-top), 3rem);
     padding-bottom: max(env(safe-area-inset-bottom), 2.5rem);
@@ -287,6 +289,7 @@
      padding tight — the timer stays the hero. Safe-area aware on every edge, with
      a tighter vertical rhythm in landscape where height is scarce. */
   .workout-canvas {
+    min-height: 100vh; /* fallback for browsers without svh */
     min-height: 100svh;
     padding-left: max(env(safe-area-inset-left), 1.5rem);
     padding-right: max(env(safe-area-inset-right), 1.5rem);

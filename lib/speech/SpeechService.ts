@@ -259,6 +259,21 @@ export class SpeechService {
     next.onerror = () => this.handleUtteranceDone();
 
     this.synth.speak(next);
+    // Chrome (desktop) intermittently suspends the synthesis queue, leaving speech
+    // silent. resume() is a no-op when nothing is paused, so this safely unsticks
+    // Chrome without affecting other browsers.
+    this.synth.resume();
+  }
+
+  /**
+   * Warm speech up from a user gesture: refresh the (async-loading) voice list —
+   * Chrome returns none until this runs — and clear any suspended state. Called
+   * by the Media Runtime on unlock(). Safe no-op where unsupported.
+   */
+  warm(): void {
+    if (!this.synth) return;
+    this.loadVoices();
+    this.synth.resume();
   }
 
   private handleUtteranceDone(): void {

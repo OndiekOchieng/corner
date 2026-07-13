@@ -121,6 +121,24 @@ describe('MediaRuntime — capabilities, diagnostics, degradation', () => {
     expect(d.browserCompatibility).toBe('full');
   });
 
+  it('surfaces live audio/voice state for the compatibility audit', async () => {
+    const ctx = new FakeAudioContext();
+    const media = new MediaRuntime({
+      capabilityEnv: { speechSynthesis: {}, audioContext: function () {}, wakeLock: {}, visibilitySupported: true },
+      audioContextFactory: () => ctx,
+      speechEngine: new FakeSpeechEngine({ voices: [{ name: 'Alex' }, { name: 'Sam' }] }),
+      wakeLockApi: null,
+      visibility: null,
+      gestureTarget: null,
+    });
+    expect(media.diagnostics().audioState).toBe('none'); // context not created yet
+    expect(media.diagnostics().voiceCount).toBe(2); // voices enumerated
+    await media.unlock();
+    const d = media.diagnostics();
+    expect(d.audioState).toBe('running'); // unlocked
+    expect(d.audioUnlocked).toBe(true);
+  });
+
   it('degrades safely with no browser APIs at all', async () => {
     const media = new MediaRuntime({
       capabilityEnv: {},

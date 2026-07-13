@@ -3,6 +3,7 @@
 import { useEffect, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { WorkoutScreen } from '@/components/Workout/WorkoutScreen';
+import { WorkoutDiagnostics } from '@/components/dev/WorkoutDiagnostics';
 import { useWorkout, usePreferences } from '@/hooks';
 import { useCoachedWorkout, type CoachedWorkoutSettings } from '@/hooks/useCoachedWorkout';
 import type { Workout } from '@/types/workout';
@@ -70,7 +71,8 @@ function ActiveRunner({ workout }: { workout: Workout }) {
     ],
   );
 
-  const { snapshot, isSupported, pause, resume, quit, getSessionId } = useCoachedWorkout(workout, settings);
+  const { snapshot, isSupported, pause, resume, quit, getSessionId, getMediaDiagnostics } =
+    useCoachedWorkout(workout, settings);
 
   // When the engine finishes, let the closing bell + coach line land, then move
   // to the summary. Data comes from the engine snapshot, not a hand-tracked timer.
@@ -142,6 +144,9 @@ function ActiveRunner({ workout }: { workout: Workout }) {
         onResume={resume}
         onQuit={handleQuit}
       />
+      {process.env.NODE_ENV !== 'production' && (
+        <WorkoutDiagnostics getMediaDiagnostics={getMediaDiagnostics} workout={snapshot} />
+      )}
     </main>
   );
 }

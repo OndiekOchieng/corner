@@ -123,8 +123,10 @@ export class MediaRuntime {
 
   // --- Gesture unlock (autoplay) ---------------------------------------------
 
-  /** Call from a trusted user gesture. Unlocks audio for the whole session. */
+  /** Call from a trusted user gesture. Unlocks audio + warms speech for the session. */
   async unlock(): Promise<boolean> {
+    // Warm speech first (voice load + unstick) while we still hold the gesture.
+    this.speech.warm();
     const ok = await this.audio.unlock();
     this.diag.setAudioUnlocked(this.audio.isUnlocked());
     return ok;
@@ -220,6 +222,12 @@ export class MediaRuntime {
   // --- Diagnostics & teardown ------------------------------------------------
 
   diagnostics(): MediaDiagnosticsSnapshot {
+    // Refresh the live values on read (they change as voices load / audio unlocks).
+    this.diag.setAudioState(this.audio.state());
+    this.diag.setVoiceCount(this.speech.voiceCount());
+    this.diag.setSelectedVoice(this.speech.selectedVoice());
+    this.diag.setVoicesReady(this.speech.isVoicesReady());
+    this.diag.setSpeechAvailable(this.speech.isAvailable());
     return this.diag.snapshot();
   }
 

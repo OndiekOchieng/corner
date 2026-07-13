@@ -7,7 +7,7 @@ import { createHostRuntime, type HostRuntime } from '@/src/lib/host';
 import { createCoachRuntimePlugin } from '@/src/lib/coaching';
 import { toWorkoutConfig, createSessionRepository } from '@/src/lib/integration';
 import { PersistenceSubscriber } from '@/src/lib/session';
-import { MediaRuntime, createMediaRuntimePlugin } from '@/src/lib/media';
+import { MediaRuntime, createMediaRuntimePlugin, type MediaDiagnosticsSnapshot } from '@/src/lib/media';
 
 export interface CoachedWorkoutSettings {
   speechEnabled: boolean;
@@ -27,6 +27,8 @@ export interface UseCoachedWorkoutReturn {
   quit: () => void;
   /** The live session id (for attaching a rating on the finish screen). */
   getSessionId: () => string | null;
+  /** Live Media Runtime diagnostics (dev-only overlay). */
+  getMediaDiagnostics: () => MediaDiagnosticsSnapshot | null;
 }
 
 type Controller = HostRuntime['controller'];
@@ -118,15 +120,15 @@ export function useCoachedWorkout(
     setController(runtime.controller);
     setIsSupported(media.capabilities().speech);
 
-    // Unlock audio from the (recent) Start gesture, then begin — so the round-one
-    // bell isn't dropped by autoplay policy.
-    let cancelled = false;
-    void media.unlock().finally(() => {
-      if (!cancelled) runtime.controller.start();
-    });
+    // Start the engine IMMEDIATELY — never gate the workout on audio unlock. On
+    // iOS the AudioContext.resume() promise can stay pending until a user gesture,
+    // so awaiting it here left the timer stuck at 00:00. Unlock audio best-effort
+    // in parallel; the Media Runtime re-attempts unlock on WORKOUT_STARTED and
+    // arms a one-shot gesture fallback, so the coach is heard as soon as possible.
+    runtime.controller.start();
+    void media.unlock();
 
     return () => {
-      cancelled = true;
       runtime.dispose();
       media.dispose();
       runtimeRef.current = null;
@@ -162,6 +164,7 @@ export function useCoachedWorkout(
     () => runtimeRef.current?.controller.getSession().id ?? null,
     [],
   );
+  const getMediaDiagnostics = useCallback(() => mediaRef.current?.diagnostics() ?? null, []);
 
-  return { snapshot, isSupported, pause, resume, quit, getSessionId };
+  return { snapshot, isSupported, pause, resume, quit, getSessionId, getMediaDiagnostics };
 }

@@ -66,7 +66,7 @@ export function WorkoutDetail({ workout }: WorkoutDetailProps) {
 
       {/* Start is always reachable — pinned to the bottom of the viewport,
           aligned to the same content column as the cards above. */}
-      <div className="page-gutter fixed inset-x-0 bottom-0 z-10 border-t border-border bg-background/90 py-4 backdrop-blur-md">
+      <div className="page-gutter fixed inset-x-0 bottom-0 z-10 border-t border-border bg-background/90 pt-4 backdrop-blur-md [padding-bottom:max(env(safe-area-inset-bottom),1rem)]">
         <div className="mx-auto w-full max-w-2xl">
           <Link
             href={`/workout/${workout.id}/active`}
