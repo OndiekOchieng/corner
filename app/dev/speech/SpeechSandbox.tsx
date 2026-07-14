@@ -54,7 +54,7 @@ function voicesFind(list: SpeechSynthesisVoice[], uri: string): SpeechSynthesisV
 
 // A fixed phrase of known length — measuring the same words at the same rate on
 // two devices isolates how each platform renders `utterance.rate` (PR-024 rate
-// investigation). Corner's shipped default rate is 1.2.
+// investigation). Corner's default rate is 1.0 (it was 1.2 before PR-024A).
 const MEASURE_TEXT =
   'This is a fixed sentence used to measure how fast the coach speaks on this device, so the same rate can be compared fairly across platforms.';
 const MEASURE_WORDS = MEASURE_TEXT.trim().split(/\s+/).length;
@@ -400,7 +400,7 @@ export function SpeechSandbox() {
           <h2 style={styles.h2}>Speech rate diagnostics (PR-024)</h2>
           <p style={styles.subtitle}>
             Measures the ACTUAL words-per-minute this device speaks the same phrase.
-            Run @1.0 and @1.2 (Corner&apos;s default) here and on the other device — same
+            Run @1.0 (Corner&apos;s default) and @1.2 (the old default) here and on the other device — same
             numeric rate, different WPM means the platform renders rate differently.
           </p>
           <div style={styles.buttons}>
@@ -408,7 +408,7 @@ export function SpeechSandbox() {
               Measure @ 1.0
             </button>
             <button onClick={() => measureRate(1.2)} style={{ ...styles.btn, ...styles.btnPrimary }}>
-              Measure @ 1.2 (Corner default)
+              Measure @ 1.2 (old default)
             </button>
             <button onClick={() => measureRate(cfgRef.current.rate)} style={styles.btn}>
               Measure @ slider

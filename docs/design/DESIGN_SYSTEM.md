@@ -147,7 +147,7 @@ The interface talks like the coach (`../coaching/` and `../product/VOICE_GUIDELI
 | "Choose a workout to get started" | "Pick a session, press start, put the phone down." |
 | "Workout Complete" | "Session complete — that was honest work. Well done." |
 | "No completed workouts yet" | "Your first round starts it all." |
-| "Speech Speed" | "Speed · 1.2×" |
+| "Speech Speed" | "Speaking speed · 1.0×" |
 
 Rules: **fewer words**; concrete over generic; calm and confident; never hype, never robotic. Buttons are verbs ("Start workout", "Done", "Reset").
 

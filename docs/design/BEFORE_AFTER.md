@@ -128,7 +128,7 @@ Each decision below ties back to at least one of: **Product Philosophy** (`../pr
 - "Workout Complete" → "Session complete — that was honest work. Well done."
 - "No completed workouts yet" → "Your first round starts it all."
 - "Catch your breath, stay focused" → "Breathe. Stay loose."
-- "Speech Speed: 1.2x" → "Speed · 1.2×"
+- "Speech Speed: 1.2x" → "Speaking speed · 1.0×" (1.0 is the neutral default; PR-024A)
 
 **Why:** the interface should **sound like the coach**, not generic software — fewer words, concrete, calm, confident. (`../product/VOICE_GUIDELINES.md`, `../coaching/`)
 
