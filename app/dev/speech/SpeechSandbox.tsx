@@ -52,6 +52,23 @@ function voicesFind(list: SpeechSynthesisVoice[], uri: string): SpeechSynthesisV
   return list.find((v) => v.voiceURI === uri) ?? null;
 }
 
+// A fixed phrase of known length — measuring the same words at the same rate on
+// two devices isolates how each platform renders `utterance.rate` (PR-024 rate
+// investigation). Corner's shipped default rate is 1.2.
+const MEASURE_TEXT =
+  'This is a fixed sentence used to measure how fast the coach speaks on this device, so the same rate can be compared fairly across platforms.';
+const MEASURE_WORDS = MEASURE_TEXT.trim().split(/\s+/).length;
+
+interface RateResult {
+  configuredRate: number;
+  actualRate: number;
+  voice: string;
+  lang: string;
+  words: number;
+  durationMs: number;
+  wpm: number;
+}
+
 export function SpeechSandbox() {
   const [text, setText] = useState(DEFAULT_TEXT);
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
@@ -63,6 +80,7 @@ export function SpeechSandbox() {
   const [log, setLog] = useState<LogEntry[]>([]);
   const [diag, setDiag] = useState<Diag | null>(null);
   const [busy, setBusy] = useState(false);
+  const [rateResult, setRateResult] = useState<RateResult | null>(null);
 
   // Refs so the diagnostics poller + async matrix read current values.
   const selURIRef = useRef(selectedURI);
@@ -216,6 +234,54 @@ export function SpeechSandbox() {
     [addLog],
   );
 
+  // --- Rate measurement (PR-024) --------------------------------------------
+  // Speak a fixed phrase at a chosen rate and time onstart→onend to compute the
+  // ACTUAL words-per-minute this device produces. Run @1.0 and @1.2 on desktop and
+  // iPhone: identical numeric rate, different WPM ⇒ the platform renders rate
+  // differently.
+  const measureRate = useCallback(
+    (atRate: number) => {
+      const synth = window.speechSynthesis;
+      if (!synth || typeof SpeechSynthesisUtterance === 'undefined') {
+        addLog('measure: speechSynthesis UNAVAILABLE', 'error');
+        return;
+      }
+      synth.cancel();
+      const c = cfgRef.current;
+      const voice = voicesFind(synth.getVoices(), selURIRef.current);
+      const u = new SpeechSynthesisUtterance(MEASURE_TEXT);
+      if (voice) u.voice = voice;
+      if (c.lang) u.lang = c.lang;
+      u.rate = atRate;
+      u.pitch = c.pitch;
+      u.volume = c.volume;
+      const now = () => (typeof performance !== 'undefined' ? performance.now() : Date.now());
+      let t0 = 0;
+      u.onstart = () => {
+        t0 = now();
+        addLog(`measure @${atRate}: START (utterance.rate=${u.rate})`, 'start');
+      };
+      u.onend = () => {
+        const durationMs = Math.round(now() - t0);
+        const wpm = durationMs > 0 ? Math.round(MEASURE_WORDS / (durationMs / 60000)) : 0;
+        setRateResult({
+          configuredRate: atRate,
+          actualRate: u.rate,
+          voice: voice?.name ?? 'browser default',
+          lang: u.lang || voice?.lang || '(default)',
+          words: MEASURE_WORDS,
+          durationMs,
+          wpm,
+        });
+        addLog(`measure @${atRate}: END dur=${durationMs}ms → ${wpm} wpm`, 'end');
+      };
+      u.onerror = (e) => addLog(`measure @${atRate}: ERROR ${(e as SpeechSynthesisErrorEvent).error ?? ''}`, 'error');
+      addLog(`measure @${atRate}: speak() ${MEASURE_WORDS} words, voice=${voice?.name ?? 'default'}`);
+      synth.speak(u);
+    },
+    [addLog],
+  );
+
   // --- Manual buttons -------------------------------------------------------
   const handleSpeak = useCallback(() => {
     const c = cfgRef.current;
@@ -328,6 +394,39 @@ export function SpeechSandbox() {
             <Row k="Selected voice" v={diag?.selectedVoice ?? '…'} />
             <Row k="Selected localService" v={diag?.selectedLocal ?? '…'} />
           </dl>
+        </section>
+
+        <section style={styles.section}>
+          <h2 style={styles.h2}>Speech rate diagnostics (PR-024)</h2>
+          <p style={styles.subtitle}>
+            Measures the ACTUAL words-per-minute this device speaks the same phrase.
+            Run @1.0 and @1.2 (Corner&apos;s default) here and on the other device — same
+            numeric rate, different WPM means the platform renders rate differently.
+          </p>
+          <div style={styles.buttons}>
+            <button onClick={() => measureRate(1.0)} style={styles.btn}>
+              Measure @ 1.0
+            </button>
+            <button onClick={() => measureRate(1.2)} style={{ ...styles.btn, ...styles.btnPrimary }}>
+              Measure @ 1.2 (Corner default)
+            </button>
+            <button onClick={() => measureRate(cfgRef.current.rate)} style={styles.btn}>
+              Measure @ slider
+            </button>
+          </div>
+          {rateResult && (
+            <dl style={styles.diagGrid}>
+              <Row k="Configured rate" v={rateResult.configuredRate.toFixed(2)} />
+              <Row k="Actual utterance.rate" v={rateResult.actualRate.toFixed(2)} />
+              <Row k="Selected voice" v={rateResult.voice} />
+              <Row k="Language" v={rateResult.lang} />
+              <Row k="Words" v={String(rateResult.words)} />
+              <Row k="Spoken duration" v={`${rateResult.durationMs} ms`} />
+              <Row k="Average words/min" v={String(rateResult.wpm)} />
+              <Row k="Queue length" v={String(diag?.pending ? '≥ 1' : '0')} />
+              <Row k="Speaking" v={String(diag?.speaking ?? false)} />
+            </dl>
+          )}
         </section>
 
         <section style={styles.section}>
