@@ -31,6 +31,15 @@ export interface MediaDiagnosticsSnapshot {
   readonly voiceCount: number;
   /** Live: selected voice name, or null for the browser default. */
   readonly selectedVoice: string | null;
+  // --- Voice readiness (PR-020A) --------------------------------------------
+  /** Live: whether the intro-gate voice is resolved (or a fallback decided). */
+  readonly voiceReady: boolean;
+  /** Live: ms from session start to the locked session voice (null until locked). */
+  readonly voiceResolutionMs: number | null;
+  /** Live: true when a specific voice was requested but the session used the default. */
+  readonly voiceFallbackUsed: boolean;
+  /** Live: where the session voice came from ('selected' | 'default' | 'fallback' | 'pending' | 'unsupported'). */
+  readonly voiceSource: string;
 }
 
 export interface MediaDiagnosticsInit {
@@ -55,6 +64,10 @@ export class MediaDiagnostics {
   private audioState = 'none';
   private voiceCount = 0;
   private selectedVoice: string | null = null;
+  private voiceReady = true;
+  private voiceResolutionMs: number | null = null;
+  private voiceFallbackUsed = false;
+  private voiceSource = 'default';
 
   constructor(init: MediaDiagnosticsInit) {
     this.capabilities = init.capabilities;
@@ -97,6 +110,17 @@ export class MediaDiagnostics {
   setSelectedVoice(v: string | null): void {
     this.selectedVoice = v;
   }
+  setVoiceReadiness(d: {
+    ready: boolean;
+    resolutionMs: number | null;
+    fallbackUsed: boolean;
+    source: string;
+  }): void {
+    this.voiceReady = d.ready;
+    this.voiceResolutionMs = d.resolutionMs;
+    this.voiceFallbackUsed = d.fallbackUsed;
+    this.voiceSource = d.source;
+  }
 
   snapshot(): MediaDiagnosticsSnapshot {
     return {
@@ -114,6 +138,10 @@ export class MediaDiagnostics {
       audioState: this.audioState,
       voiceCount: this.voiceCount,
       selectedVoice: this.selectedVoice,
+      voiceReady: this.voiceReady,
+      voiceResolutionMs: this.voiceResolutionMs,
+      voiceFallbackUsed: this.voiceFallbackUsed,
+      voiceSource: this.voiceSource,
     };
   }
 

@@ -54,9 +54,71 @@ export interface SpeechServiceConfig {
   rate?: number;
   pitch?: number;
   volume?: number;
+  /**
+   * How long the FIRST utterance may wait for the selected voice to resolve
+   * before falling back to the browser default (PR-020A). The workout/timer is
+   * never gated — only this one line. Default 800 ms.
+   */
+  voiceReadyTimeoutMs?: number;
+  /** Injected monotonic clock (for resolution-time diagnostics). Default performance.now/Date.now. */
+  now?: () => number;
+  /** Injected one-shot timer; returns a cancel fn. Default setTimeout/clearTimeout. */
+  scheduleTimeout?: (cb: () => void, ms: number) => () => void;
 }
 
 type VoicesListener = (voices: SpeechSynthesisVoice[]) => void;
+
+/** A browser-free voice descriptor — no `SpeechSynthesisVoice` leaks above the speech boundary. */
+export interface VoiceInfo {
+  readonly id: string; // voiceURI
+  readonly name: string;
+  readonly lang: string;
+  readonly isDefault: boolean;
+  readonly localService: boolean;
+}
+
+/**
+ * Voice readiness for the startup gate (PR-020A).
+ *   unsupported     — no speech engine; nothing to wait for
+ *   loading         — a specific voice was requested but voices haven't loaded yet
+ *   ready-default   — the browser default will be used (either chosen, or the
+ *                     requested voice is unavailable so we won't wait)
+ *   ready-selected  — the requested voice is resolved and will be used
+ */
+export type VoiceStatus = 'unsupported' | 'loading' | 'ready-default' | 'ready-selected';
+
+/** Voice-readiness diagnostics (browser-edge only). */
+export interface VoiceReadinessDiagnostics {
+  readonly ready: boolean;
+  readonly status: VoiceStatus;
+  readonly selectedVoice: string | null;
+  /** ms from construction to the moment the session voice was locked (null until locked). */
+  readonly resolutionMs: number | null;
+  /** true when a specific voice was requested but the session ended up on the default. */
+  readonly fallbackUsed: boolean;
+  readonly source: 'selected' | 'default' | 'fallback' | 'pending' | 'unsupported';
+}
+
+function toVoiceInfo(v: SpeechSynthesisVoice): VoiceInfo {
+  return {
+    id: v.voiceURI ?? v.name,
+    name: v.name,
+    lang: v.lang ?? '',
+    isDefault: Boolean((v as { default?: boolean }).default),
+    localService: Boolean((v as { localService?: boolean }).localService),
+  };
+}
+
+function defaultNow(): number {
+  return typeof performance !== 'undefined' && typeof performance.now === 'function'
+    ? performance.now()
+    : Date.now();
+}
+
+function defaultScheduleTimeout(cb: () => void, ms: number): () => void {
+  const id = setTimeout(cb, ms);
+  return () => clearTimeout(id);
+}
 
 /**
  * Development-only boundary trace. Call sites gate on an INLINE
@@ -120,6 +182,23 @@ export class SpeechService {
 
   private voices: SpeechSynthesisVoice[] = [];
   private voicesListeners = new Set<VoicesListener>();
+  /** True once the browser has enumerated voices at least once (list non-empty). */
+  private voicesLoaded = false;
+
+  // --- Voice-readiness gate (PR-020A) ---------------------------------------
+  private readonly voiceReadyTimeoutMs: number;
+  private readonly now: () => number;
+  private readonly scheduleTimeout: (cb: () => void, ms: number) => () => void;
+  private readonly constructedAtMs: number;
+  /** The one voice used for the ENTIRE session, locked when the intro is released. */
+  private lockedVoice: SpeechSynthesisVoice | null = null;
+  private voiceLocked = false;
+  /** True once the first (introductory) utterance has been released past the gate. */
+  private introReleased = false;
+  private gateArmed = false;
+  private cancelVoiceTimer: (() => void) | null = null;
+  private voiceResolutionMs: number | null = null;
+  private voiceFallbackUsed = false;
 
   /** Stable identity + boundary counters for the speech-pipeline trace (PR-014). */
   readonly instanceId = ++instanceCounter;
@@ -138,6 +217,11 @@ export class SpeechService {
     this.rate = clamp(config.rate ?? 1, 0.1, 10);
     this.pitch = clamp(config.pitch ?? 1, 0, 2);
     this.volume = clamp(config.volume ?? 1, 0, 1);
+
+    this.voiceReadyTimeoutMs = config.voiceReadyTimeoutMs ?? 800;
+    this.now = config.now ?? defaultNow;
+    this.scheduleTimeout = config.scheduleTimeout ?? defaultScheduleTimeout;
+    this.constructedAtMs = this.now();
 
     if (this.synth) {
       this.loadVoices();
@@ -263,6 +347,8 @@ export class SpeechService {
    * Teardown must NOT use this; teardown calls `dispose()` (below).
    */
   cancel(): void {
+    this.cancelVoiceTimer?.();
+    this.cancelVoiceTimer = null;
     this.queue = [];
     this.current = null;
     this.speaking = false;
@@ -284,6 +370,8 @@ export class SpeechService {
    * ownership.
    */
   dispose(): void {
+    this.cancelVoiceTimer?.();
+    this.cancelVoiceTimer = null;
     if (this.current) {
       this.current.onstart = null;
       this.current.onend = null;
@@ -307,25 +395,76 @@ export class SpeechService {
   // ---------------------------------------------------------------------------
 
   private buildUtterance(text: string): UtteranceLike {
-    // `createUtterance` is guaranteed non-null here via isSupported() gate.
+    // `createUtterance` is guaranteed non-null here via isSupported() gate. The
+    // voice is assigned at DISPATCH time (in pump), not here — a gated intro may
+    // wait for its voice to resolve after the utterance object is built.
     const utterance = this.createUtterance!(text);
     utterance.rate = this.rate;
     utterance.pitch = this.pitch;
     utterance.volume = this.volume;
-    if (this.selectedVoice) utterance.voice = this.selectedVoice;
     return utterance;
+  }
+
+  /** The voice this session speaks with: the locked one once set, else the current selection. */
+  private effectiveVoice(): SpeechSynthesisVoice | null {
+    return this.voiceLocked ? this.lockedVoice : this.selectedVoice;
+  }
+
+  /**
+   * The voice-readiness startup gate (PR-020A). The FIRST utterance of the
+   * session (the coach's intro) waits for the selected voice to resolve — up to
+   * `voiceReadyTimeoutMs` — so it is never spoken in the browser default and then
+   * switched. The workout/timer is NOT gated (that lives in the Engine/Host,
+   * untouched); only this one line waits. Returns true when the gate is holding.
+   */
+  private gatingFirstUtterance(): boolean {
+    if (this.introReleased) return false;
+    if (this.voiceReady()) {
+      this.releaseIntro();
+      return false;
+    }
+    this.armVoiceGate();
+    return true;
+  }
+
+  private armVoiceGate(): void {
+    if (this.gateArmed) return;
+    this.gateArmed = true;
+    this.cancelVoiceTimer = this.scheduleTimeout(() => this.releaseIntro(), this.voiceReadyTimeoutMs);
+  }
+
+  /**
+   * Release the held intro and LOCK the session voice. Whatever voice is
+   * resolved at this instant (the selection, or null=default on timeout/absence)
+   * is used for the whole session — a later `voiceschanged` can never switch it.
+   */
+  private releaseIntro(): void {
+    if (this.introReleased) return;
+    this.introReleased = true;
+    this.cancelVoiceTimer?.();
+    this.cancelVoiceTimer = null;
+    this.lockedVoice = this.selectedVoice;
+    this.voiceLocked = true;
+    this.voiceFallbackUsed = this.pendingVoiceURI != null && this.lockedVoice == null;
+    this.voiceResolutionMs = this.now() - this.constructedAtMs;
+    this.pump();
   }
 
   /** Start the next utterance if idle and not paused. */
   private pump(): void {
     if (!this.synth) return;
     if (this.paused || this.speaking) return;
+    // Hold the intro at the gate until the voice resolves (or times out).
+    if (this.gatingFirstUtterance()) return;
 
     const next = this.queue.shift();
     if (!next) return;
 
     this.current = next;
     this.speaking = true;
+    // Apply the (possibly just-locked) session voice at dispatch time.
+    const voice = this.effectiveVoice();
+    next.voice = voice ?? null;
 
     // Instrument the browser boundary — this is where "speak() called but nothing
     // heard" is proven: synth.speak fires but onstart never does.
@@ -346,7 +485,7 @@ export class SpeechService {
     };
 
     this.synthSpeakCalls += 1;
-    process.env.NODE_ENV === 'development' && trace(`#${this.instanceId} synth.speak():`, next.text, `(voice=${this.selectedVoice?.name ?? 'default'})`);
+    process.env.NODE_ENV === 'development' && trace(`#${this.instanceId} synth.speak():`, next.text, `(voice=${voice?.name ?? 'default'})`);
     this.synth.speak(next);
     // Only nudge when the browser genuinely suspended the queue (Chrome's "stuck
     // paused" bug). Unconditionally resuming a fresh utterance can interfere on
@@ -391,10 +530,70 @@ export class SpeechService {
   private loadVoices(): void {
     if (!this.synth) return;
     this.voices = this.synth.getVoices() ?? [];
+    if (this.voices.length > 0) this.voicesLoaded = true;
     // Resolve a deferred voice selection now that voices are available.
     if (this.pendingVoiceURI && !this.selectedVoice) {
       this.setVoice(this.pendingVoiceURI);
     }
+    // If the intro is waiting at the gate and the voice is now ready, release it
+    // immediately (before the timeout) so the coach opens in the chosen voice.
+    if (this.gateArmed && !this.introReleased && this.voiceReady()) {
+      this.releaseIntro();
+    }
     this.voicesListeners.forEach((listener) => listener(this.voices));
+  }
+
+  // ---------------------------------------------------------------------------
+  // Voice readiness (PR-020A) — browser-free contract surfaced by the Media Runtime
+  // ---------------------------------------------------------------------------
+
+  /** True when the intro no longer needs to wait: unsupported, default chosen, voice resolved, or voices loaded (fall back). */
+  voiceReady(): boolean {
+    if (!this.synth || !this.createUtterance) return true; // nothing to wait for
+    if (this.voiceLocked) return true; // session voice already decided
+    if (!this.pendingVoiceURI) return true; // browser default requested
+    if (this.selectedVoice) return true; // requested voice resolved
+    if (this.voicesLoaded) return true; // loaded but requested one absent → fall back, don't wait
+    return false; // a specific voice was requested and voices haven't loaded yet
+  }
+
+  voiceStatus(): VoiceStatus {
+    if (!this.synth || !this.createUtterance) return 'unsupported';
+    if (this.voiceLocked) return this.lockedVoice ? 'ready-selected' : 'ready-default';
+    if (!this.pendingVoiceURI) return 'ready-default';
+    if (this.selectedVoice) return 'ready-selected';
+    if (this.voicesLoaded) return 'ready-default'; // requested voice unavailable → default fallback
+    return 'loading';
+  }
+
+  /** The effective session voice as a browser-free DTO, or null when the default is used. */
+  selectedVoiceInfo(): VoiceInfo | null {
+    const v = this.effectiveVoice();
+    return v ? toVoiceInfo(v) : null;
+  }
+
+  /** All available voices as browser-free DTOs (for the settings picker). */
+  availableVoiceInfos(): VoiceInfo[] {
+    return this.voices.map(toVoiceInfo);
+  }
+
+  /** Voice-readiness diagnostics (browser-edge only). */
+  voiceDiagnostics(): VoiceReadinessDiagnostics {
+    const status = this.voiceStatus();
+    const selected = this.selectedVoiceInfo();
+    let source: VoiceReadinessDiagnostics['source'];
+    if (status === 'unsupported') source = 'unsupported';
+    else if (this.voiceFallbackUsed) source = 'fallback';
+    else if (selected) source = 'selected';
+    else if (this.voiceLocked || !this.pendingVoiceURI) source = 'default';
+    else source = 'pending';
+    return {
+      ready: this.voiceReady(),
+      status,
+      selectedVoice: selected?.name ?? null,
+      resolutionMs: this.voiceResolutionMs,
+      fallbackUsed: this.voiceFallbackUsed,
+      source,
+    };
   }
 }

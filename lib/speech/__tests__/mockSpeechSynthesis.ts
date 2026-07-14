@@ -86,4 +86,10 @@ export class MockSpeechSynthesis implements SpeechSynthesisLike {
     this.speaking = false;
     this.paused = false;
   }
+
+  /** Simulate the browser finishing async voice enumeration (fires `voiceschanged`). */
+  emitVoicesChanged(voices: SpeechSynthesisVoice[]): void {
+    this.voices = voices;
+    this.onvoiceschanged?.call(this, undefined as unknown as Event);
+  }
 }

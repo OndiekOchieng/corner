@@ -17,7 +17,15 @@ import type { SpeechSink } from '../coaching';
 import { SpeechService } from '@/lib/speech/SpeechService';
 import { CapabilityService, resolveCapabilityEnv, type CapabilityEnv, type CapabilitySnapshot } from './CapabilityService';
 import { AudioManager, type AudioContextFactory, type AudioContextLike, type BellKind } from './AudioManager';
-import { SpeechManager, type SpeechEngine, type SpeechSettings, type SpeechServiceStats } from './SpeechManager';
+import {
+  SpeechManager,
+  type SpeechEngine,
+  type SpeechSettings,
+  type SpeechServiceStats,
+  type VoiceInfo,
+  type VoiceStatus,
+  type VoiceReadinessDiagnostics,
+} from './SpeechManager';
 import { WakeLockManager, type WakeLockApiLike } from './WakeLockManager';
 import { MediaDiagnostics, type MediaDiagnosticsSnapshot } from './MediaDiagnostics';
 
@@ -235,7 +243,34 @@ export class MediaRuntime {
     this.diag.setSelectedVoice(this.speech.selectedVoice());
     this.diag.setVoicesReady(this.speech.isVoicesReady());
     this.diag.setSpeechAvailable(this.speech.isAvailable());
+    const vr = this.speech.voiceDiagnostics();
+    this.diag.setVoiceReadiness({
+      ready: vr.ready,
+      resolutionMs: vr.resolutionMs,
+      fallbackUsed: vr.fallbackUsed,
+      source: vr.source,
+    });
     return this.diag.snapshot();
+  }
+
+  // --- Voice readiness (PR-020A) — browser-free contract for the workout ------
+
+  /** True when the intro no longer needs to wait for the selected voice. */
+  voiceReady(): boolean {
+    return this.speech.voiceReady();
+  }
+  voiceStatus(): VoiceStatus {
+    return this.speech.voiceStatus();
+  }
+  /** The effective session voice as a browser-free DTO (null = browser default). */
+  selectedVoice(): VoiceInfo | null {
+    return this.speech.selectedVoiceInfo();
+  }
+  availableVoices(): readonly VoiceInfo[] {
+    return this.speech.availableVoices();
+  }
+  voiceReadiness(): VoiceReadinessDiagnostics {
+    return this.speech.voiceDiagnostics();
   }
 
   /** Speech-pipeline trace: instance identity + browser-boundary counters (dev). */

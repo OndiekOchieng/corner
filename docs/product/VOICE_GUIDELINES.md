@@ -103,3 +103,21 @@ Why it's good: sparse, timed, one idea per cue, boxing-specific, energy that ris
 4. Does it land *before/at* the right moment, never after? 
 5. Would the coach be *right* — never claiming to see, never mistimed, never unsafe? 
 6. If I deleted it, would the athlete be worse off? (If no, delete it.)
+
+---
+
+## 10. Amendment — PR-020: the opening line & time of day
+
+Two rules for the **session opening**, so the first thing the athlete hears is right
+(design in [`../coaching-runtime/SESSION_INTRODUCTIONS.md`](../coaching-runtime/SESSION_INTRODUCTIONS.md)):
+
+- **Never hard-code the time of day.** "Tonight", "this morning" and the like break
+  immersion the moment they're wrong. Default to **timeless wording**. A coach may
+  reference time only as a rare, personality-specific flourish, selected from injected
+  `timeOfDay` data with a neutral fallback — so it can never be spoken at the wrong hour.
+  (The engine passes time in; the coach never reads a clock.)
+- **The opening voices the workout, not a template.** State the session's objective/focus
+  in the coach's own words ("Today's focus: {focus}."), then hand off to round one — one
+  idea per breath, same checklist above. The workout supplies the facts; the Coach Pack
+  supplies the voice. Which coach references time, and how warmly they greet, is part of
+  their personality (`PERSONALITY_SYSTEM.md`).

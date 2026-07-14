@@ -8,9 +8,14 @@
  */
 
 import type { SpeechSink } from '../coaching';
-import type { SpeechServiceStats } from '@/lib/speech/SpeechService';
+import type {
+  SpeechServiceStats,
+  VoiceInfo,
+  VoiceStatus,
+  VoiceReadinessDiagnostics,
+} from '@/lib/speech/SpeechService';
 
-export type { SpeechServiceStats };
+export type { SpeechServiceStats, VoiceInfo, VoiceStatus, VoiceReadinessDiagnostics };
 
 /** The subset of SpeechService the manager depends on (structural — no import). */
 export interface SpeechEngine {
@@ -36,6 +41,12 @@ export interface SpeechEngine {
   /** Optional: stable instance id + boundary counters (speech-pipeline trace). */
   readonly instanceId?: number;
   stats?(): SpeechServiceStats;
+  /** Optional: voice-readiness contract (PR-020A). */
+  voiceReady?(): boolean;
+  voiceStatus?(): VoiceStatus;
+  selectedVoiceInfo?(): VoiceInfo | null;
+  availableVoiceInfos?(): VoiceInfo[];
+  voiceDiagnostics?(): VoiceReadinessDiagnostics;
 }
 
 export interface SpeechSettings {
@@ -91,6 +102,35 @@ export class SpeechManager {
   }
   serviceStats(): SpeechServiceStats | null {
     return this.engine.stats?.() ?? null;
+  }
+
+  // --- Voice readiness (PR-020A) — browser-free, forwarded to the engine ------
+
+  /** True when the intro no longer needs to wait for the selected voice. */
+  voiceReady(): boolean {
+    return this.engine.voiceReady?.() ?? true; // engines without the contract are always "ready"
+  }
+  voiceStatus(): VoiceStatus {
+    return this.engine.voiceStatus?.() ?? (this.isAvailable() ? 'ready-default' : 'unsupported');
+  }
+  /** The effective session voice as a browser-free DTO (null = browser default). */
+  selectedVoiceInfo(): VoiceInfo | null {
+    return this.engine.selectedVoiceInfo?.() ?? null;
+  }
+  availableVoices(): readonly VoiceInfo[] {
+    return this.engine.availableVoiceInfos?.() ?? [];
+  }
+  voiceDiagnostics(): VoiceReadinessDiagnostics {
+    return (
+      this.engine.voiceDiagnostics?.() ?? {
+        ready: this.voiceReady(),
+        status: this.voiceStatus(),
+        selectedVoice: this.selectedVoice(),
+        resolutionMs: null,
+        fallbackUsed: false,
+        source: this.isAvailable() ? 'default' : 'unsupported',
+      }
+    );
   }
 
   /** The render port handed to the Coach Runtime. Degrades to no-ops safely. */

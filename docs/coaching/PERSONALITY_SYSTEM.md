@@ -142,3 +142,26 @@ Each coach is defined on eleven axes. Fill all eleven and the coach writes itsel
 ## 8. The personality contract
 
 > Each Corner coach is a full person defined on eleven axes — philosophy, temperament, vocabulary, humour, patience, intensity, correction, rest, and the three framing moments (round intro, workout intro, workout ending). Every coach teaches the same correct boxing and honors the same trust rules; they differ in *how they make the athlete feel.* Write all eleven consistently and the athlete trains with a human, not a voice pack.
+
+---
+
+## Amendment — PR-020: the workout intro becomes a structured `SessionIntroduction`
+
+The "workout intro" framing moment is promoted from a flat phrase bank to a structured,
+pack-owned authoring concept (design in
+[`../coaching-runtime/SESSION_INTRODUCTIONS.md`](../coaching-runtime/SESSION_INTRODUCTIONS.md)):
+
+```
+SessionIntroduction = { purpose · greeting? · opening · objective · transition }
+```
+
+- **Ownership is unchanged and reaffirmed:** the introduction belongs to the **Coach
+  Pack**, not the workout. The workout provides *facts* only — `objective`, `focus`
+  (new), plus `name`, `difficulty`, `stance`. The pack decides *how* they are spoken.
+- **Time of day is a pack-dependent, opt-in flourish, never hard-coded.** Default
+  wording is timeless; a pack may reference time (Fight Night "tonight", Calm "good
+  morning") **only** via an injected `timeOfDay` value with a neutral fallback — the
+  Coach Runtime never reads the wall clock (determinism holds). This retires the
+  hard-coded "Tonight we train…" in `personalities.ts`.
+- Authoring a pack now includes its `SessionIntroduction`; the existing
+  `workout_intro` bank maps to the `opening` segment, so the change is incremental.

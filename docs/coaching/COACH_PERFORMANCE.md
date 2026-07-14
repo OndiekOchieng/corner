@@ -95,3 +95,20 @@ If any answer is no, the coach says nothing — and that silence is coaching, no
 ## 7. The performance contract
 
 > Corner speaks only to change the next action, at a moment that respects the athlete's attention and load, in true boxing language, in a consistent voice, with perfect timing on the things that matter — and stays silent the rest of the time. That is the difference between a coach and a timer, and it is the whole job.
+
+---
+
+## Amendment — PR-020: Session introduction & voice readiness
+
+The session's **first impression** is part of the performance and gets two refinements
+(design in [`../coaching-runtime/SESSION_INTRODUCTIONS.md`](../coaching-runtime/SESSION_INTRODUCTIONS.md)
+and [`../coaching-runtime/VOICE_READINESS.md`](../coaching-runtime/VOICE_READINESS.md)):
+
+- **The opening is a structured `SessionIntroduction`**, not a flat line — optional
+  greeting, opening framing, the workout's objective/focus voiced in the coach's own
+  words, and a hand-off to round one. It is owned by the Coach Pack; the workout
+  supplies only the facts (`objective`, `focus`).
+- **The first line is spoken in the correct coach voice.** The intro utterance waits
+  (bounded, ~800 ms) for voice readiness while the timer starts immediately — the coach
+  never opens in the browser default voice, and the workout is never delayed. This
+  extends the perfect-timing clause of the contract to *voice*, not just to countdowns.

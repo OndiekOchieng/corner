@@ -209,6 +209,147 @@ describe('SpeechService', () => {
     });
   });
 
+  describe('voice readiness gate (PR-020A)', () => {
+    // Two loaded voices; 'coach' is the athlete's selection, 'ghost' is never present.
+    const VOICES = [
+      { voiceURI: 'coach', name: 'Coach', lang: 'en-US', default: false, localService: true },
+      { voiceURI: 'other', name: 'Other', lang: 'en-GB', default: true, localService: false },
+    ] as unknown as SpeechSynthesisVoice[];
+
+    // A manually-driven timeout scheduler so the fallback is deterministic.
+    function makeScheduler() {
+      const timers: Array<() => void> = [];
+      return {
+        schedule: (cb: () => void) => {
+          timers.push(cb);
+          return () => {
+            const i = timers.indexOf(cb);
+            if (i >= 0) timers.splice(i, 1);
+          };
+        },
+        fireTimeout: () => timers.shift()?.(),
+        get pending() {
+          return timers.length;
+        },
+      };
+    }
+
+    function gated(synthVoices: SpeechSynthesisVoice[]) {
+      const s = new MockSpeechSynthesis(synthVoices);
+      const sched = makeScheduler();
+      const service = new SpeechService({
+        synth: s,
+        createUtterance: createMockUtterance,
+        scheduleTimeout: sched.schedule,
+        now: () => 0,
+      });
+      return { s, sched, service };
+    }
+
+    it('selected voice already available → speaks immediately in that voice', () => {
+      const { s, sched, service } = gated(VOICES);
+      service.setVoice('coach');
+      expect(service.voiceReady()).toBe(true);
+
+      service.speak('intro');
+
+      expect(s.started).toEqual(['intro']); // no wait
+      expect(s.current?.voice?.name).toBe('Coach');
+      expect(sched.pending).toBe(0); // gate never armed
+      expect(service.voiceStatus()).toBe('ready-selected');
+    });
+
+    it('voices load later → the intro waits, then speaks in the selected voice', () => {
+      const { s, sched, service } = gated([]); // empty at first
+      service.setVoice('coach');
+      expect(service.voiceReady()).toBe(false);
+
+      service.speak('intro');
+      expect(s.started).toEqual([]); // HELD at the gate
+      expect(sched.pending).toBe(1); // timeout armed
+
+      s.emitVoicesChanged(VOICES); // browser finishes enumerating
+      expect(s.started).toEqual(['intro']); // released
+      expect(s.current?.voice?.name).toBe('Coach'); // in the chosen voice
+      expect(sched.pending).toBe(0); // timeout cancelled
+    });
+
+    it('timeout fallback → speaks in the browser default after the bounded wait', () => {
+      const { s, sched, service } = gated([]);
+      service.setVoice('coach');
+
+      service.speak('intro');
+      expect(s.started).toEqual([]); // held
+
+      sched.fireTimeout(); // ~800 ms elapse, voices never loaded
+      expect(s.started).toEqual(['intro']); // spoke anyway
+      expect(s.current?.voice).toBeNull(); // default voice
+      expect(service.voiceDiagnostics().fallbackUsed).toBe(true);
+      expect(service.voiceStatus()).toBe('ready-default');
+    });
+
+    it('unavailable selected voice → does not wait, falls back to default', () => {
+      const { s, sched, service } = gated(VOICES); // loaded, but 'ghost' absent
+      service.setVoice('ghost');
+      expect(service.voiceReady()).toBe(true); // no point waiting
+
+      service.speak('intro');
+      expect(s.started).toEqual(['intro']);
+      expect(s.current?.voice).toBeNull();
+      expect(service.voiceDiagnostics().fallbackUsed).toBe(true);
+      expect(sched.pending).toBe(0);
+    });
+
+    it('browser default requested → never gates', () => {
+      const { s, sched, service } = gated([]);
+      // no setVoice → default
+      expect(service.voiceReady()).toBe(true);
+
+      service.speak('intro');
+      expect(s.started).toEqual(['intro']);
+      expect(s.current?.voice).toBeNull();
+      expect(sched.pending).toBe(0);
+      expect(service.voiceStatus()).toBe('ready-default');
+      expect(service.voiceDiagnostics().fallbackUsed).toBe(false);
+    });
+
+    it('never switches voice mid-workout: default locked at timeout stays default', () => {
+      const { s, sched, service } = gated([]);
+      service.setVoice('coach');
+
+      service.speak('intro');
+      sched.fireTimeout(); // locks the DEFAULT (voices weren't ready)
+      expect(s.current?.voice).toBeNull();
+      s.finishCurrent();
+
+      s.emitVoicesChanged(VOICES); // the coach voice arrives AFTER the lock
+      service.speak('round one');
+      expect(s.started).toEqual(['intro', 'round one']);
+      expect(s.current?.voice).toBeNull(); // still default — no mid-session switch
+    });
+
+    it('locks the selected voice for every subsequent line', () => {
+      const { s, service } = gated(VOICES);
+      service.setVoice('coach');
+      service.speak('intro');
+      s.finishCurrent();
+      service.speak('round one');
+      expect(s.current?.voice?.name).toBe('Coach'); // consistent voice
+    });
+
+    it('is deterministic: identical inputs → identical outcome', () => {
+      const run = () => {
+        const { s, sched, service } = gated([]);
+        service.setVoice('coach');
+        service.speak('intro');
+        sched.fireTimeout();
+        const d = service.voiceDiagnostics();
+        return { started: s.started.slice(), voice: s.current?.voice ?? null, source: d.source, fallback: d.fallbackUsed };
+      };
+      expect(run()).toEqual(run());
+    });
+  });
+
   describe('utterance configuration', () => {
     it('applies rate, pitch, and volume to utterances', () => {
       service.setRate(1.5);

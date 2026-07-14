@@ -62,7 +62,12 @@ export {
   type SpeechTraceSnapshot,
 } from './MediaRuntime';
 
-export type { SpeechServiceStats } from './SpeechManager';
+export type {
+  SpeechServiceStats,
+  VoiceInfo,
+  VoiceStatus,
+  VoiceReadinessDiagnostics,
+} from './SpeechManager';
 
 export { primeSpeechFromGesture } from './prime';
 
