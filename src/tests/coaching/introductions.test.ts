@@ -65,12 +65,15 @@ describe('Session introductions (PR-020B)', () => {
     expect(without.toLowerCase()).not.toContain('distance control');
     // Still a complete opening: framing + hand-off.
     expect(without.toLowerCase()).toContain('precision');
-    expect(without.toLowerCase()).toMatch(/round one/);
+    expect(without.toLowerCase()).toMatch(/work|here we go/);
   });
 
-  it('every introduction hands over to round one', () => {
+  it('hands off to the round WITHOUT announcing it (Round Intro owns that — PR-021)', () => {
     for (const p of ALL_PACKS) {
-      expect(openingLine(p, { focus: 'footwork' }).toLowerCase()).toMatch(/round one/);
+      const line = openingLine(p, { focus: 'footwork' }).toLowerCase();
+      // The Session Introduction must never announce "Round one" or duplicate the
+      // Round Introduction — that responsibility belongs to ROUND_STARTED.
+      expect(line).not.toMatch(/round one|round 1\b/);
     }
   });
 

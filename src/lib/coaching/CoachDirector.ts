@@ -69,6 +69,8 @@ export class CoachDirector {
 
       case 'ROUND_STARTED': {
         convo.enterRound(event.data.roundNumber);
+        // Record when this round ends so coaching respects the countdown (PR-021).
+        convo.setRoundEnd(event.elapsedMs + event.data.durationMs);
         const roundName = event.data.round.name ?? `Round ${event.data.roundNumber}`;
         return [
           {

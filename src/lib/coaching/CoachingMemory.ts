@@ -60,6 +60,8 @@ export class CoachingMemory {
   private lastTaughtDimensionValue: Dimension | null = null;
   private lastTechniqueValue: string | null = null;
   private lastAnchorElapsedMs: number | null = null;
+  /** Engine elapsed at which the current round ends (PR-021), for deadline preemption. */
+  private roundEndsAtElapsedMs: number | null = null;
   /** Boxing call signs the coach has already introduced (teach-before-shorthand). */
   private readonly introducedCallSigns = new Set<string>();
 
@@ -152,6 +154,16 @@ export class CoachingMemory {
     this.roundTaughtDimensions.clear();
   }
 
+  /** Record when the current round ends (PR-021) so coaching can respect the countdown. */
+  setRoundEnd(endElapsedMs: number): void {
+    this.roundEndsAtElapsedMs = endElapsedMs;
+  }
+
+  /** Engine elapsed at which the current round ends, or null outside a round. */
+  roundEndsAtMs(): number | null {
+    return this.roundEndsAtElapsedMs;
+  }
+
   setEnergy(energy: CoachEnergy): void {
     this.energy = energy;
   }
@@ -215,6 +227,7 @@ export class CoachingMemory {
     this.lastTaughtDimensionValue = null;
     this.lastTechniqueValue = null;
     this.lastAnchorElapsedMs = null;
+    this.roundEndsAtElapsedMs = null;
     this.introducedCallSigns.clear();
   }
 }

@@ -18,7 +18,15 @@
  */
 
 import type { WorkoutEvent } from '../engine';
-import { isCritical, type CoachAction, type CoachIntent, type SpeechSink } from './CoachAction';
+import {
+  isCritical,
+  isStructural,
+  validityTtlMs,
+  estimateSpeechMs,
+  type CoachAction,
+  type CoachIntent,
+  type SpeechSink,
+} from './CoachAction';
 import type { CoachContext } from './CoachContext';
 import { CoachingMemory } from './CoachingMemory';
 import { CoachDirector, type DirectedIntent } from './CoachDirector';
@@ -29,6 +37,18 @@ import { QueueManager } from './QueueManager';
 import { CoachDiagnostics, type CoachDiagnosticsSnapshot } from './CoachDiagnostics';
 import { personalityFor, type PersonalityProfile } from './personalities';
 import { nextUntaughtSign, callSign } from './BoxingLexicon';
+
+/**
+ * Countdown beats, seconds remaining — mirrors the engine's default thresholds
+ * (Marker.ts DEFAULT_COUNTDOWN_LEAD_SECONDS). Descending, so the first beat that
+ * fits the remaining time is the SOONEST one. Used to decide whether a coaching
+ * line can finish before "Ten… Nine…" (PR-021). Not an engine import — a small,
+ * documented mirror the coach reasons against.
+ */
+const COUNTDOWN_THRESHOLDS_SEC = [10, 5, 4, 3, 2, 1] as const;
+
+/** A small safety margin over the speech estimate, so a line clears the beat cleanly. */
+const COUNTDOWN_PREEMPT_BUFFER_MS = 250;
 
 export class CoachRuntime {
   private readonly convo: CoachingMemory;
@@ -71,8 +91,14 @@ export class CoachRuntime {
         this.sink.pause();
         return [];
       case 'WORKOUT_RESUMED': {
+        // Speech is a LIVE view of the timeline (PR-021), not a recording. Drop
+        // the coach's pending queue AND anything buffered or mid-utterance in the
+        // sink from before the pause — so a stale intro/cue never replays while the
+        // athlete is already further into the workout — then un-pause for NOW. The
+        // ongoing event stream supplies coaching appropriate to the current point.
         const dropped = this.queue.flush();
         this.diagnostics.recordDiscarded(dropped.length);
+        this.sink.cancel();
         this.sink.resume();
         return [];
       }
@@ -117,6 +143,14 @@ export class CoachRuntime {
 
     const text = this.resolveText(candidate, event.elapsedMs);
     if (text == null) return;
+
+    // Structural-deadline preemption (PR-021): never START a coaching line that
+    // cannot finish before the round's countdown — skip it rather than let
+    // "Ten… Nine…" cut it off. The countdown/finish trust skeleton is exempt.
+    if (this.wouldMissCountdown(candidate.intent, text, event.elapsedMs)) {
+      this.diagnostics.recordSilence();
+      return;
+    }
 
     const action = this.buildAction(candidate.intent, text, event, candidate.ttlMs);
     // Commit to conversation memory now so later candidates in this same batch
@@ -168,6 +202,37 @@ export class CoachRuntime {
     return this.convo.hasRecentText(text);
   }
 
+  /**
+   * True when a coaching line, started now, could NOT finish before the next
+   * countdown beat (or the round's end) — so it would be cut by "Ten… Nine…" and
+   * must be skipped rather than started (PR-021). Structural + critical intents
+   * (the trust skeleton) are exempt and always land. Deterministic: the beats are
+   * the engine's fixed thresholds, measured against the round-end deadline in
+   * engine `elapsedMs`.
+   */
+  private wouldMissCountdown(intent: CoachIntent, text: string, nowMs: number): boolean {
+    if (isStructural(intent) || isCritical(intent)) return false;
+    const deadline = this.nextStructuralDeadlineMs(nowMs);
+    if (deadline == null) return false;
+    return nowMs + estimateSpeechMs(text) + COUNTDOWN_PREEMPT_BUFFER_MS > deadline;
+  }
+
+  /**
+   * The next moment the countdown "owns the air": the soonest countdown beat at or
+   * after now, or the round end. Null when we're not inside a live round (during
+   * rest / at the boundary there is no deadline to respect).
+   */
+  private nextStructuralDeadlineMs(nowMs: number): number | null {
+    const roundEnd = this.convo.roundEndsAtMs();
+    if (roundEnd == null || nowMs >= roundEnd) return null;
+    const remainingMs = roundEnd - nowMs;
+    for (const t of COUNTDOWN_THRESHOLDS_SEC) {
+      const beatMs = t * 1000;
+      if (beatMs <= remainingMs) return roundEnd - beatMs; // the next beat
+    }
+    return roundEnd; // past the last beat → the round end itself
+  }
+
   private buildAction(
     intent: CoachIntent,
     text: string,
@@ -181,7 +246,12 @@ export class CoachRuntime {
       text,
       sourceSeq: event.seq,
       createdElapsedMs: event.elapsedMs,
-      expiresElapsedMs: ttlMs != null ? event.elapsedMs + ttlMs : null,
+      // Temporal validity (PR-021): an explicit ttl (e.g. urgency) wins, else the
+      // per-intent default. null ⇒ never expires (countdown/finish).
+      expiresElapsedMs: (() => {
+        const ttl = ttlMs ?? validityTtlMs(intent);
+        return ttl != null ? event.elapsedMs + ttl : null;
+      })(),
       interrupt: isCritical(intent),
     };
   }

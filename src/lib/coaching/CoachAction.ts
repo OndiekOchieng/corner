@@ -104,6 +104,46 @@ export const isCritical = (intent: CoachIntent): boolean => CRITICAL.has(intent)
 export const isRepeatable = (intent: CoachIntent): boolean => REPEATABLE.has(intent);
 export const basePriority = (intent: CoachIntent): number => INTENT_PRIORITY[intent];
 
+/**
+ * Temporal validity (PR-021): how long after creation an action stays relevant.
+ * Speech is a live view of the timeline, so a line that could not be spoken within
+ * its window is stale and discarded rather than replayed. `null` = never expires
+ * (the countdown/finish trust skeleton is always valid when it fires). The Coach
+ * Runtime sets `expiresElapsedMs = createdElapsedMs + ttl`; the queue drops any
+ * action past it. All in engine `elapsedMs` — deterministic, no wall clock.
+ */
+export const VALIDITY_TTL_MS: Readonly<Record<CoachIntent, number | null>> = {
+  countdown: null,
+  finish: null,
+  workout_intro: 8000, // the welcome is only relevant at the very start
+  warmup: 12000,
+  round_intro: 20000, // a round intro belongs at the top of the round, not later
+  rest_intro: 15000,
+  time_anchor: 6000, // "one minute to go" is wrong ten seconds later
+  urgency: 2500,
+  correction: 12000,
+  reinforcement: 12000,
+  combination: 12000,
+  instruction: 12000,
+  reminder: 12000,
+  teaching: 15000,
+  recovery: 10000,
+  encouragement: 9000,
+};
+
+export const validityTtlMs = (intent: CoachIntent): number | null => VALIDITY_TTL_MS[intent];
+
+/**
+ * A deterministic estimate of how long a line takes to speak, for structural-
+ * deadline preemption (PR-021). Pure function of the text (~167 wpm + a little
+ * latency) — no wall clock, no measurement. Used to decide whether a coaching line
+ * can finish before a countdown/bell, so we never start speech we'd have to cut.
+ */
+export function estimateSpeechMs(text: string): number {
+  const words = text.trim().split(/\s+/).filter(Boolean).length;
+  return 300 + words * 360;
+}
+
 export interface CoachAction {
   /** Deterministic identity: `${sourceSeq}:${intent}`. */
   readonly id: string;

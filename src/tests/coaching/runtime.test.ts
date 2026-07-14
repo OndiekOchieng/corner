@@ -25,14 +25,16 @@ describe('CoachRuntime — a full workout feels coached', () => {
     expect(sink.spoken.at(-1)).toMatch(/round|well|trained|respect/i); // honest close
   });
 
-  it('speaks the authored cues verbatim (and holds one that collides with the count)', () => {
+  it('speaks the authored cues verbatim; skips the final push that would be cut by the count', () => {
     const { sink } = run('technical');
-    // Early cues render exactly as authored…
+    // Every authored cue fits between countdown beats, so all render as authored…
     expect(sink.spoken).toContain('Jab');
     expect(sink.spoken).toContain('Cross');
-    // …but the final round's cue lands inside the countdown window here, so the
-    // coach clears the air for the count (TIMING_MODEL.md §7) — it is not spoken.
-    expect(sink.spoken).not.toContain('Hook');
+    expect(sink.spoken).toContain('Hook');
+    // …but the final-round urgency lands on the countdown beat, so it is SKIPPED
+    // rather than started and then cut by "Ten… Nine…" (PR-021 preemption).
+    expect(sink.spoken).not.toContain('Hold the form — finish precise.');
+    expect(sink.spoken).not.toContain('Sharp to the end.');
   });
 
   it('never says the same line twice in a row (no duplicated coaching)', () => {
