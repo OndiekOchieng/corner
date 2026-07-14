@@ -14,7 +14,7 @@
 import type { WorkoutEvent } from '../engine';
 import type { CoachIntent } from './CoachAction';
 import type { CoachContext } from './CoachContext';
-import type { ConversationState } from './ConversationState';
+import type { CoachingMemory } from './CoachingMemory';
 import type { PlanParams } from './SpeechPlanner';
 import { parseAnchorKind } from './anchors';
 import { classifyDimension } from './reinforcements';
@@ -41,7 +41,7 @@ export function classifyCue(text: string): CoachIntent {
 export class CoachDirector {
   constructor(private readonly context: CoachContext) {}
 
-  direct(event: WorkoutEvent, convo: ConversationState): DirectedIntent[] {
+  direct(event: WorkoutEvent, convo: CoachingMemory): DirectedIntent[] {
     switch (event.type) {
       case 'WORKOUT_STARTED': {
         convo.setTotalRounds(event.data.totalRounds);
@@ -110,7 +110,17 @@ export class CoachDirector {
 
       case 'ROUND_COMPLETED':
         // Candidate earned encouragement — the silence gate decides if it's earned.
-        return [{ intent: 'encouragement', params: { roundNumber: event.data.roundNumber } }];
+        // Reference the lesson taught so praise reinforces a concept ("Good. Keep
+        // protecting yourself.") instead of a hollow "Great job".
+        return [
+          {
+            intent: 'encouragement',
+            params: {
+              roundNumber: event.data.roundNumber,
+              dimension: convo.lastTaughtDimension() ?? undefined,
+            },
+          },
+        ];
 
       case 'REST_STARTED': {
         convo.setEnergy('low');

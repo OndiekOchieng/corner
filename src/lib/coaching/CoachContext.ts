@@ -3,7 +3,7 @@
  *
  * This is the static "who is coaching and how carefully" — the personality plus
  * the tunable thresholds that encode the Silence Guide and Timing Model. It does
- * NOT hold live conversation state (that's ConversationState) and it never
+ * NOT hold live conversation state (that's CoachingMemory) and it never
  * duplicates engine state.
  */
 

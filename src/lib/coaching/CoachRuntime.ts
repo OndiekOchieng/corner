@@ -20,7 +20,7 @@
 import type { WorkoutEvent } from '../engine';
 import { isCritical, type CoachAction, type CoachIntent, type SpeechSink } from './CoachAction';
 import type { CoachContext } from './CoachContext';
-import { ConversationState } from './ConversationState';
+import { CoachingMemory } from './CoachingMemory';
 import { CoachDirector, type DirectedIntent } from './CoachDirector';
 import { SpeechPlanner } from './SpeechPlanner';
 import { decideSilence } from './SilenceController';
@@ -30,7 +30,7 @@ import { CoachDiagnostics, type CoachDiagnosticsSnapshot } from './CoachDiagnost
 import { personalityFor, type PersonalityProfile } from './personalities';
 
 export class CoachRuntime {
-  private readonly convo: ConversationState;
+  private readonly convo: CoachingMemory;
   private readonly director: CoachDirector;
   private readonly planner: SpeechPlanner;
   private readonly queue: QueueManager;
@@ -43,7 +43,7 @@ export class CoachRuntime {
     private readonly sink: SpeechSink,
   ) {
     this.profile = personalityFor(context.personality);
-    this.convo = new ConversationState(context.config.dedupeWindow);
+    this.convo = new CoachingMemory(context.config.dedupeWindow);
     this.director = new CoachDirector(context);
     this.planner = new SpeechPlanner(this.profile);
     this.queue = new QueueManager(context.config.maxQueueDepth);

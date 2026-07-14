@@ -166,3 +166,24 @@ SessionIntroduction = { purpose · greeting? · opening · objective · transiti
   hard-coded "Tonight we train…" in `personalities.ts`.
 - Authoring a pack now includes its `SessionIntroduction`; the existing
   `workout_intro` bank maps to the `opening` segment, so the change is incremental.
+
+---
+
+## Amendment — PR-020C: per-pack vocabulary
+
+Each pack now adopts boxing terminology differently (`PACK_VOCABULARY` in
+`BoxingLexicon.ts`; see [BOXING_LEXICON.md](BOXING_LEXICON.md)). The same combination
+`[1, 2, 6]` becomes:
+
+| Pack | Says | Adoption |
+|---|---|---|
+| Technical | Jab. Cross. Rear uppercut. | plain names, explains |
+| Calm | Let's finish with the rear uppercut. | soft, explains first |
+| Southpaw | Lead hand. Rear hand. Rear uppercut. | stance-specific naming |
+| Old School | One-two-six. | authentic gym shorthand |
+| Fight Night | One-two-six! | energetic shorthand |
+| Competition | Six. Again. | minimal, efficient |
+
+Vocabulary is a twelfth expression axis: *how a coach names the work* is part of who
+they are. Call-sign packs teach a sign before assuming it; name-based packs never need
+to. All teach the same correct boxing.

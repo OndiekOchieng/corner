@@ -12,7 +12,7 @@
 
 import { isStructural, type CoachIntent } from './CoachAction';
 import type { CoachConfig } from './CoachContext';
-import type { ConversationSnapshot } from './ConversationState';
+import type { CoachingMemorySnapshot } from './CoachingMemory';
 import type { PersonalityProfile } from './personalities';
 import type { PlanParams } from './SpeechPlanner';
 
@@ -35,7 +35,7 @@ function gapScale(profile: PersonalityProfile): number {
 
 export function decideSilence(
   intent: CoachIntent,
-  convo: ConversationSnapshot,
+  convo: CoachingMemorySnapshot,
   params: PlanParams,
   config: CoachConfig,
   profile: PersonalityProfile,

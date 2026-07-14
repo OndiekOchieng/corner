@@ -6,13 +6,13 @@ import {
   compare,
   SpeechPlanner,
   QueueManager,
-  ConversationState,
+  CoachingMemory,
   decideSilence,
   personalityFor,
   DEFAULT_COACH_CONFIG,
   type CoachAction,
   type CoachIntent,
-  type ConversationSnapshot,
+  type CoachingMemorySnapshot,
 } from '../../lib/coaching';
 import { SpySink } from './helpers';
 
@@ -69,7 +69,7 @@ describe('PriorityResolver — deterministic ordering', () => {
 // --- Speech planning ---------------------------------------------------------
 
 describe('SpeechPlanner — wording', () => {
-  const convo = () => new ConversationState(5);
+  const convo = () => new CoachingMemory(5);
 
   it('renders exact countdown number words', () => {
     const planner = new SpeechPlanner(personalityFor('technical'));
@@ -174,7 +174,7 @@ describe('QueueManager — enqueue/replace/discard/flush/expire/drain', () => {
 
 describe('SilenceController — intentional silence', () => {
   const profile = personalityFor('technical');
-  const base = (over: Partial<ConversationSnapshot> = {}): ConversationSnapshot => ({
+  const base = (over: Partial<CoachingMemorySnapshot> = {}): CoachingMemorySnapshot => ({
     currentRound: 2,
     totalRounds: 3,
     energy: 'steady',
@@ -185,6 +185,9 @@ describe('SilenceController — intentional silence', () => {
     lastEncouragementElapsedMs: null,
     recentTexts: [],
     linesSpoken: 0,
+    taughtDimensions: [],
+    lastTaughtDimension: null,
+    reinforcementCounts: {},
     ...over,
   });
   const cfg = DEFAULT_COACH_CONFIG;

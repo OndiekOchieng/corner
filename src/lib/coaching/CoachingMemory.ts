@@ -1,5 +1,5 @@
 /**
- * ConversationState — the coach's lightweight, mutable memory.
+ * CoachingMemory — the coach's lightweight, mutable memory.
  *
  * It exists ONLY to make coaching better: enough to avoid repetition, space out
  * lines, keep encouragement earned, and colour wording by energy. It deliberately
@@ -14,7 +14,7 @@ import { isStructural, type CoachEnergy, type CoachIntent } from './CoachAction'
 import type { Dimension } from './reinforcements';
 
 /** Immutable view handed to the silence controller and planner. */
-export interface ConversationSnapshot {
+export interface CoachingMemorySnapshot {
   readonly currentRound: number;
   readonly totalRounds: number;
   readonly energy: CoachEnergy;
@@ -26,9 +26,16 @@ export interface ConversationSnapshot {
   readonly lastEncouragementElapsedMs: number | null;
   readonly recentTexts: readonly string[];
   readonly linesSpoken: number;
+  // --- Coaching memory (PR-020C) --------------------------------------------
+  /** Every dimension taught at least once this SESSION (not just this round). */
+  readonly taughtDimensions: readonly Dimension[];
+  /** The dimension of the most recent teaching/reinforcement (for encouragement reference). */
+  readonly lastTaughtDimension: Dimension | null;
+  /** How many times each dimension has been reinforced this session. */
+  readonly reinforcementCounts: Readonly<Record<string, number>>;
 }
 
-export class ConversationState {
+export class CoachingMemory {
   private currentRound = 0;
   private totalRounds = 0;
   private energy: CoachEnergy = 'calm';
@@ -45,11 +52,22 @@ export class ConversationState {
   /** Coaching dimensions already taught in the CURRENT round (reset each round). */
   private readonly roundTaughtDimensions = new Set<Dimension>();
 
+  // --- Coaching memory (PR-020C): remembers teaching, not dialogue -----------
+  /** Dimensions taught at least once this SESSION (persists across rounds). */
+  private readonly taughtDimensionsSession = new Set<Dimension>();
+  /** Reinforcement count per dimension (concept progression). */
+  private readonly reinforcementCounts = new Map<Dimension, number>();
+  private lastTaughtDimensionValue: Dimension | null = null;
+  private lastTechniqueValue: string | null = null;
+  private lastAnchorElapsedMs: number | null = null;
+  /** Boxing call signs the coach has already introduced (teach-before-shorthand). */
+  private readonly introducedCallSigns = new Set<string>();
+
   constructor(private readonly dedupeWindow: number) {}
 
   // --- reads -----------------------------------------------------------------
 
-  snapshot(): ConversationSnapshot {
+  snapshot(): CoachingMemorySnapshot {
     return {
       currentRound: this.currentRound,
       totalRounds: this.totalRounds,
@@ -61,7 +79,39 @@ export class ConversationState {
       lastEncouragementElapsedMs: this.lastEncouragementElapsedMs,
       recentTexts: this.recentTexts.slice(),
       linesSpoken: this.linesSpoken,
+      taughtDimensions: [...this.taughtDimensionsSession],
+      lastTaughtDimension: this.lastTaughtDimensionValue,
+      reinforcementCounts: Object.fromEntries(this.reinforcementCounts),
     };
+  }
+
+  /** How many times this dimension has been reinforced this session (concept progression). */
+  reinforcementCount(dimension: Dimension): number {
+    return this.reinforcementCounts.get(dimension) ?? 0;
+  }
+
+  /** The dimension of the most recent teaching — what an encouragement can reference. */
+  lastTaughtDimension(): Dimension | null {
+    return this.lastTaughtDimensionValue;
+  }
+
+  /** The exact wording of the most recent authored technique cue. */
+  lastTechnique(): string | null {
+    return this.lastTechniqueValue;
+  }
+
+  /** Has this dimension been taught anywhere in the session yet? */
+  wasDimensionTaughtThisSession(dimension: Dimension): boolean {
+    return this.taughtDimensionsSession.has(dimension);
+  }
+
+  // --- Boxing vocabulary (teach a call sign once, then use the shorthand) -----
+  hasIntroducedCallSign(sign: string): boolean {
+    return this.introducedCallSigns.has(sign);
+  }
+
+  noteCallSignIntroduced(sign: string): void {
+    this.introducedCallSigns.add(sign);
   }
 
   isFinalRound(): boolean {
@@ -122,8 +172,27 @@ export class ConversationState {
     if (intent === 'correction') this.lastCorrectionElapsedMs = elapsedMs;
     if (intent === 'encouragement') this.lastEncouragementElapsedMs = elapsedMs;
     if (intent === 'reminder') this.reminderTextAt.set(text, elapsedMs);
+    if (intent === 'time_anchor') this.lastAnchorElapsedMs = elapsedMs;
+
     // Remember the dimension so the next same-dimension cue reinforces (varies).
     if (dimension) this.roundTaughtDimensions.add(dimension);
+
+    // Coaching memory (PR-020C): remember the LESSON across the whole session.
+    if (intent === 'reinforcement' && dimension) {
+      this.reinforcementCounts.set(dimension, (this.reinforcementCounts.get(dimension) ?? 0) + 1);
+    }
+    const teaches =
+      intent === 'instruction' ||
+      intent === 'reminder' ||
+      intent === 'correction' ||
+      intent === 'reinforcement';
+    if (teaches && dimension && dimension !== 'general') {
+      this.taughtDimensionsSession.add(dimension);
+      this.lastTaughtDimensionValue = dimension;
+    }
+    if (intent === 'instruction' || intent === 'reminder' || intent === 'correction') {
+      this.lastTechniqueValue = text;
+    }
   }
 
   /** Full reset for a new session (also used defensively on cancel). */
@@ -141,5 +210,11 @@ export class ConversationState {
     this.reminderTextAt.clear();
     this.rotations.clear();
     this.roundTaughtDimensions.clear();
+    this.taughtDimensionsSession.clear();
+    this.reinforcementCounts.clear();
+    this.lastTaughtDimensionValue = null;
+    this.lastTechniqueValue = null;
+    this.lastAnchorElapsedMs = null;
+    this.introducedCallSigns.clear();
   }
 }

@@ -32,7 +32,7 @@ export {
   makeContext,
 } from './CoachContext';
 
-export { ConversationState, type ConversationSnapshot } from './ConversationState';
+export { CoachingMemory, type CoachingMemorySnapshot } from './CoachingMemory';
 export { CoachDirector, classifyCue, type DirectedIntent } from './CoachDirector';
 export { SpeechPlanner, type PlanParams } from './SpeechPlanner';
 export type {
@@ -66,9 +66,26 @@ export {
 export {
   REINFORCEMENTS,
   reinforcementBank,
+  ENCOURAGEMENT_REFERENCE,
+  encouragementReferenceBank,
   classifyDimension,
   type Dimension,
 } from './reinforcements';
+
+export {
+  PUNCHES,
+  PACK_VOCABULARY,
+  callSign,
+  punchName,
+  usesCallSigns,
+  renderCombo,
+  renderComboTaught,
+  teachCallSign,
+  type PunchNumber,
+  type VocabularyLevel,
+  type PackVocabulary,
+  type ComboRender,
+} from './BoxingLexicon';
 
 export {
   CoachRuntimePlugin,

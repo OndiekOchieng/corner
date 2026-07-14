@@ -112,3 +112,23 @@ and [`../coaching-runtime/VOICE_READINESS.md`](../coaching-runtime/VOICE_READINE
   (bounded, ~800 ms) for voice readiness while the timer starts immediately — the coach
   never opens in the browser default voice, and the workout is never delayed. This
   extends the perfect-timing clause of the contract to *voice*, not just to countdowns.
+
+---
+
+## Amendment — PR-020C: a coach that remembers
+
+Performance now includes *memory*. Backed by [COACHING_MEMORY.md](COACHING_MEMORY.md)
+and [BOXING_LEXICON.md](BOXING_LEXICON.md):
+
+- **Reinforcement, not repetition.** The same lesson recurs in fresh words
+  ("Keep your hands high" → "Don't let them drop." → "Protect yourself."), never the
+  identical sentence. Reinforcement *replaces* a repeated line — it does not add one,
+  so density and silence are unchanged.
+- **Encouragement references the lesson**, not a hollow "Great job" — "Good work. Keep
+  that guard disciplined." — still an instruction about the taught concept, never a
+  claim to see the athlete.
+- **Boxing language is taught, then used.** Call signs are explained once ("Every time
+  I say one, I mean the jab.") and then used as shorthand; each pack speaks at its own
+  vocabulary level. The athlete learns the language by training.
+- **Determinism holds.** Memory improves judgement; variety is deterministic rotation,
+  never randomness.

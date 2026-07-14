@@ -7,15 +7,15 @@
  * spoken VERBATIM — the Cue Library already chose those words, and the runtime
  * must not corrupt them. Countdown renders exact number words.
  *
- * Pure and deterministic: rotation is a counter in ConversationState, not RNG.
+ * Pure and deterministic: rotation is a counter in CoachingMemory, not RNG.
  */
 
 import type { CoachIntent } from './CoachAction';
-import type { ConversationState } from './ConversationState';
+import type { CoachingMemory } from './CoachingMemory';
 import type { PersonalityProfile, ComposedKey } from './personalities';
 import type { SessionGreeting, TimeOfDay } from './SessionIntroduction';
 import { anchorBank, type AnchorKind } from './anchors';
-import { reinforcementBank, type Dimension } from './reinforcements';
+import { reinforcementBank, encouragementReferenceBank, type Dimension } from './reinforcements';
 
 export interface PlanParams {
   roundNumber?: number;
@@ -93,7 +93,7 @@ export class SpeechPlanner {
   plan(
     intent: CoachIntent,
     params: PlanParams,
-    convo: ConversationState,
+    convo: CoachingMemory,
     attempt = 0,
   ): string | null {
     if (intent === 'countdown') {
@@ -124,6 +124,19 @@ export class SpeechPlanner {
       return this.fromBank(reinforcementBank(dim), `reinforce:${dim}`, convo, attempt);
     }
 
+    // Encouragement that references the lesson just taught (PR-020C). When the
+    // memory knows a taught dimension, praise reinforces THAT concept ("Good.
+    // Keep protecting yourself.") rather than a hollow "Great job". Falls back to
+    // the pack's generic encouragement when nothing specific has been taught.
+    if (intent === 'encouragement' && params.dimension && params.dimension !== 'general') {
+      return this.fromBank(
+        encouragementReferenceBank(params.dimension),
+        `encourage-ref:${params.dimension}`,
+        convo,
+        attempt,
+      );
+    }
+
     const key = composedKey(intent, params);
     if (!key) return null;
     return this.fromBank(this.profile.banks[key], `${this.profile.id}:${key}`, convo, attempt, params);
@@ -134,9 +147,9 @@ export class SpeechPlanner {
    * objective? + transition, each a deterministically-rotated variant, joined
    * into one natural line. The objective segment is included only when the
    * workout provides a focus/objective. Fully deterministic — rotation is a
-   * ConversationState counter, and time-of-day is injected (never read here).
+   * CoachingMemory counter, and time-of-day is injected (never read here).
    */
-  private composeIntroduction(params: PlanParams, convo: ConversationState): string | null {
+  private composeIntroduction(params: PlanParams, convo: CoachingMemory): string | null {
     const intro = this.profile.introduction;
     const id = this.profile.id;
     const parts: string[] = [];
@@ -168,7 +181,7 @@ export class SpeechPlanner {
   private pickGreeting(
     greeting: SessionGreeting | undefined,
     timeOfDay: TimeOfDay | undefined,
-    convo: ConversationState,
+    convo: CoachingMemory,
   ): string | null {
     if (!greeting) return null;
     let bank: readonly string[] = greeting.neutral;
@@ -183,7 +196,7 @@ export class SpeechPlanner {
   private fromBank(
     bank: readonly string[] | undefined,
     rotationKey: string,
-    convo: ConversationState,
+    convo: CoachingMemory,
     attempt: number,
     params?: PlanParams,
   ): string | null {

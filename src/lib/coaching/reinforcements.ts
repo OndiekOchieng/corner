@@ -58,3 +58,25 @@ export const REINFORCEMENTS: Readonly<Record<Dimension, readonly string[]>> = {
 export function reinforcementBank(dimension: Dimension): readonly string[] {
   return REINFORCEMENTS[dimension];
 }
+
+/**
+ * Encouragement that REFERENCES the lesson just taught (PR-020C) — "Good. Keep
+ * that guard disciplined." — instead of a hollow "Great job". It reinforces the
+ * concept without claiming to SEE the athlete: every line is an instruction about
+ * the taught dimension, never an observation of performance.
+ */
+export const ENCOURAGEMENT_REFERENCE: Readonly<Record<Dimension, readonly string[]>> = {
+  guard: ['Good work. Keep that guard disciplined.', 'Good. Keep protecting yourself.'],
+  distance: ['Good work. Keep owning that distance.', 'Good. Keep leading behind the jab.'],
+  footwork: ['Good work. Keep owning the floor.', 'Good. Keep those feet working.'],
+  breathing: ['Good work. Keep that breathing easy.', 'Good. Stay relaxed and loose.'],
+  rhythm: ['Good work. Keep that rhythm going.', 'Good. Stay in time.'],
+  power: ['Good work. Keep sitting down on it.', 'Good. Keep driving from the floor.'],
+  head: ['Good work. Keep that head moving.', 'Good. Stay off the centre-line.'],
+  output: ['Good work. Keep that work rate up.', 'Good. Keep the hands busy.'],
+  general: ['Good work. Keep it sharp.', 'Good. Stay focused.'],
+};
+
+export function encouragementReferenceBank(dimension: Dimension): readonly string[] {
+  return ENCOURAGEMENT_REFERENCE[dimension];
+}

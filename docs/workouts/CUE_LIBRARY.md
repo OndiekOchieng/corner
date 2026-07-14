@@ -128,3 +128,19 @@ These occupy fixed moments; keep them crisp and consistent (athletes rely on the
 ## 7. Anti-repetition principle
 
 Because a cue like "hands back" may be needed many times, **every high-frequency idea must ship with 4+ interchangeable wordings**, and authors (and coach packs) rotate them. A coach who says the exact same sentence the exact same way every 30 seconds stops being a coach and becomes a recording — and the athlete stops listening. Variety *is* trust.
+
+---
+
+## 8. Amendment — PR-020C: dimensions, reinforcement & call signs
+
+- **Every cue has a teaching dimension** (guard, footwork, distance, breathing, rhythm,
+  power, head, output, …), classified from its wording. The first cue of a dimension in
+  a round is spoken **verbatim**; later same-dimension cues are **reinforced** in fresh
+  words by the runtime (see [COACHING_MEMORY.md](../coaching/COACHING_MEMORY.md)). Authors
+  still write the authoritative first line; the anti-repetition burden for reminders is
+  now shared with the runtime.
+- **Combination cues may carry call-sign metadata** — an optional punch-number sequence
+  (`[1, 2, 6]`) so the coach can voice the combo at each pack's vocabulary level and
+  teach the numbers naturally (see [BOXING_LEXICON.md](../coaching/BOXING_LEXICON.md)).
+  Authored cue *text* is still spoken verbatim; the metadata only enables coach-voiced
+  call signs.
