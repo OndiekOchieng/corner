@@ -105,9 +105,11 @@ The session's **first impression** is part of the performance and gets two refin
 and [`../coaching-runtime/VOICE_READINESS.md`](../coaching-runtime/VOICE_READINESS.md)):
 
 - **The opening is a structured `SessionIntroduction`**, not a flat line — optional
-  greeting, opening framing, the workout's objective/focus voiced in the coach's own
-  words, and a hand-off to round one. It is owned by the Coach Pack; the workout
-  supplies only the facts (`objective`, `focus`).
+  short greeting, opening framing, and a hand-off to work. It is owned by the Coach
+  Pack. Per PR-028 the intro no longer briefs the workout's focus/objective: naming a
+  concept in the intro *and* again in the round is teaching it twice (LAW FOUR). The
+  opening coaches, it does not brief — "Southpaw Fundamentals. Let's work." See
+  [COACHING_DOCTRINE.md](COACHING_DOCTRINE.md).
 - **The first line is spoken in the correct coach voice.** The intro utterance waits
   (bounded, ~800 ms) for voice readiness while the timer starts immediately — the coach
   never opens in the browser default voice, and the workout is never delayed. This
@@ -121,12 +123,14 @@ Performance now includes *memory*. Backed by [COACHING_MEMORY.md](COACHING_MEMOR
 and [BOXING_LEXICON.md](BOXING_LEXICON.md):
 
 - **Reinforcement, not repetition.** The same lesson recurs in fresh words
-  ("Keep your hands high" → "Don't let them drop." → "Protect yourself."), never the
-  identical sentence. Reinforcement *replaces* a repeated line — it does not add one,
-  so density and silence are unchanged.
-- **Encouragement references the lesson**, not a hollow "Great job" — "Good work. Keep
-  that guard disciplined." — still an instruction about the taught concept, never a
-  claim to see the athlete.
+  ("Keep your hands high" → "Hands home!" → "Guard!"), never the identical sentence.
+  Reinforcement *replaces* a repeated line — it does not add one, so density and
+  silence are unchanged. Per PR-028 the doctrine is behavioural micro-coaching (a
+  coach shouting across the gym), not a textbook — see
+  [COACHING_DOCTRINE.md](COACHING_DOCTRINE.md).
+- **Encouragement references the lesson**, not a hollow "Great job" — "Good. Hands
+  home." — still an instruction about the taught concept, never a claim to see the
+  athlete.
 - **Boxing language is taught, then used.** Call signs are explained once ("Every time
   I say one, I mean the jab.") and then used as shorthand; each pack speaks at its own
   vocabulary level. The athlete learns the language by training.

@@ -40,32 +40,36 @@ describe('Session introductions (PR-020B)', () => {
     expect(new Set([t, f, o]).size).toBe(3); // all distinct
   });
 
-  it('same facts across packs: every pack voices the same objective, framed its own way', () => {
+  it('carries the workout identity and hands off, framed its own way per pack', () => {
     const facts = { focus: 'distance control' };
     const t = openingLine('technical', facts);
     const c = openingLine('competition', facts);
 
-    // Same objective fact is spoken by both…
-    expect(t.toLowerCase()).toContain('distance control');
-    expect(c.toLowerCase()).toContain('distance control');
-    // …and both carry the workout name…
+    // Both carry the workout identity…
     expect(t).toContain('Foundations');
     expect(c).toContain('Foundations');
-    // …but the signature framing differs.
-    expect(t.toLowerCase()).toContain('precision');
-    expect(c.toLowerCase()).toContain('championship');
+    // …and hand off to work, each in its own words…
+    expect(t.toLowerCase()).toMatch(/build|work/);
+    expect(c.toLowerCase()).toMatch(/work|go|standard/);
     expect(t).not.toBe(c);
   });
 
-  it('omits the objective segment when the workout has no focus', () => {
+  it('never briefs the focus — teach the concept once, in the round, not the intro (PR-028)', () => {
+    // A great coach says "Foundations. Let's work." — not "Today's focus is distance
+    // control." Naming the concept in the intro AND again in the round is teaching it
+    // twice (LAW FOUR). The intro coaches; it does not brief.
     const withFocus = openingLine('technical', { focus: 'distance control' });
     const without = openingLine('technical', {});
 
-    expect(withFocus.toLowerCase()).toContain('distance control');
+    expect(withFocus.toLowerCase()).not.toContain('distance control');
     expect(without.toLowerCase()).not.toContain('distance control');
-    // Still a complete opening: framing + hand-off.
-    expect(without.toLowerCase()).toContain('precision');
-    expect(without.toLowerCase()).toMatch(/work|here we go/);
+    // Focus present or absent, the intro is the same terse opening — the concept
+    // is not repeated here.
+    expect(withFocus).toBe(without);
+    // Still a complete opening: identity + hand-off, and short (LESS WORDS).
+    expect(without).toContain('Foundations');
+    expect(without.toLowerCase()).toMatch(/build|work/);
+    expect(without.split(/\s+/).length).toBeLessThanOrEqual(6);
   });
 
   it('hands off to the round WITHOUT announcing it (Round Intro owns that — PR-021)', () => {

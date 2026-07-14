@@ -40,7 +40,7 @@ describe('Temporal consistency (PR-021)', () => {
     for (const at of [5000, 45000, 90000]) {
       const sink = session({ resumeAtMs: at });
       // The intro was spoken once, before the pause, and is NOT replayed on resume.
-      expect(sink.spoken.filter((l) => /precision first/i.test(l))).toHaveLength(1);
+      expect(sink.spoken.filter((l) => /let's build/i.test(l))).toHaveLength(1);
       // On resume the coach drops stale buffered speech, then un-pauses.
       expect(sink.calls).toContain('pause');
       const resumeIdx = sink.calls.lastIndexOf('resume');

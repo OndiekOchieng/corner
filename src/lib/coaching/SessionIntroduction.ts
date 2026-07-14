@@ -3,16 +3,20 @@
  *
  * The workout owns the FACTS (name, objective, focus, difficulty, stance); the
  * Coach Pack owns the EXPRESSION. A `SessionIntroduction` is how a pack frames
- * those facts: an optional greeting, its signature opening, the objective voiced
- * in the coach's own words, and a natural hand-off to round one — each a bank of
- * deterministically-rotated variants.
+ * those facts: an optional short greeting, its signature opening, and a natural
+ * hand-off to work — each a bank of deterministically-rotated variants.
+ *
+ * PR-028 (philosophy correction): the opening coaches, it does not brief. A great
+ * coach says "Southpaw today. Let's work." — not a paragraph. The session no longer
+ * voices the workout's focus/objective: naming a concept in the intro AND again in
+ * the round is teaching it twice (LAW FOUR). Teach once, coach afterwards — the
+ * round intros and the work itself carry the concept.
  *
  * It is AUTHORED, not generated: every line is written by a person. Time-of-day is
  * never hard-coded — a pack references it only if it authors the matching greeting
  * bank, and the value is injected (the Coach Runtime never reads a clock).
  *
- * Placeholders (filled by SpeechPlanner): {name} workout, {focus}/{objective} the
- * session's focus.
+ * Placeholders (filled by SpeechPlanner): {name} workout.
  */
 
 import type { CoachEnergy } from './CoachAction';
@@ -36,11 +40,9 @@ export interface SessionIntroduction {
   readonly purpose: string;
   /** Optional greeting. Omit entirely for packs that don't greet. */
   readonly greeting?: SessionGreeting;
-  /** The pack's signature framing line(s). Always present. */
+  /** The pack's signature framing line(s) — short. Always present. */
   readonly opening: readonly string[];
-  /** Voices the session's focus/objective; only used when the workout provides one. */
-  readonly objective: readonly string[];
-  /** A natural hand-off to round one. Always present. */
+  /** A natural hand-off to work — short. Always present. */
   readonly transition: readonly string[];
   /** The energy the session opens at (colours later wording). */
   readonly energy: CoachEnergy;

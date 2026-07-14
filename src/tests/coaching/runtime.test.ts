@@ -33,8 +33,8 @@ describe('CoachRuntime — a full workout feels coached', () => {
     expect(sink.spoken).toContain('Hook');
     // …but the final-round urgency lands on the countdown beat, so it is SKIPPED
     // rather than started and then cut by "Ten… Nine…" (PR-021 preemption).
-    expect(sink.spoken).not.toContain('Hold the form — finish precise.');
-    expect(sink.spoken).not.toContain('Sharp to the end.');
+    expect(sink.spoken).not.toContain('Sharp! Finish!');
+    expect(sink.spoken).not.toContain('Precise to the end!');
   });
 
   it('never says the same line twice in a row (no duplicated coaching)', () => {

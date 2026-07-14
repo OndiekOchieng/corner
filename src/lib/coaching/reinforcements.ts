@@ -42,17 +42,22 @@ export function classifyDimension(text: string): Dimension {
   return 'general';
 }
 
-/** Reinforcement phrase pools — same lesson, varied wording. */
+/**
+ * Reinforcement phrase pools — the same lesson, varied wording (PR-020C), reshaped
+ * to behavioural micro-coaching (PR-028). Doctrine is a coach walking the gym, not a
+ * textbook: prefer "Hands home!" over "Maintain your defensive position." Every line
+ * changes behaviour in as few words as possible (LAWS ONE & TWO).
+ */
 export const REINFORCEMENTS: Readonly<Record<Dimension, readonly string[]>> = {
-  guard: ["Don't let them drop.", 'Protect yourself.', 'Hands home.', 'Keep the guard up.'],
-  distance: ['Own the distance.', 'Keep leading.', 'Make the jab work.', 'Control the range.'],
-  footwork: ["Stay on your feet.", 'Keep cutting angles.', "Don't stop moving.", 'Own the floor.'],
-  breathing: ['Stay relaxed.', 'Keep breathing.', 'Loose and easy.', "Don't tense up."],
-  rhythm: ['Find the rhythm.', 'Stay in time.', 'Keep it flowing.', "Don't force it."],
-  power: ['Sit down on it.', 'Drive from the floor.', 'Turn it over.', 'Snap it back.'],
-  head: ['Keep the head moving.', "Don't be still.", 'Make him miss.', 'Off the centre-line.'],
-  output: ['Keep the work rate up.', 'Stay busy.', "Don't slow down.", 'Keep punching.'],
-  general: ['Stay sharp.', 'Keep it clean.', 'Stay focused.', 'Keep it going.'],
+  guard: ['Hands home!', 'Hands up!', 'Guard!', 'Protect!'],
+  distance: ['Own the range!', 'Behind the jab!', 'Stay long!', 'Reach him!'],
+  footwork: ['Move!', 'Angle out!', 'On your feet!', 'Cut the angle!'],
+  breathing: ['Breathe!', 'Relax.', 'Loose.', 'Stay easy.'],
+  rhythm: ['Find the rhythm.', 'In time!', 'Keep it flowing.', 'Stay smooth.'],
+  power: ['Sit on it!', 'Turn it over!', 'Drive it!', 'Snap it!'],
+  head: ['Head moving!', 'Off the line!', 'Make him miss!', 'Slip!'],
+  output: ['Busy hands!', 'Stay busy!', 'More!', 'Keep punching!'],
+  general: ['Sharp!', 'Stay clean!', 'Focus!', 'Keep it going!'],
 };
 
 export function reinforcementBank(dimension: Dimension): readonly string[] {
@@ -66,15 +71,15 @@ export function reinforcementBank(dimension: Dimension): readonly string[] {
  * the taught dimension, never an observation of performance.
  */
 export const ENCOURAGEMENT_REFERENCE: Readonly<Record<Dimension, readonly string[]>> = {
-  guard: ['Good work. Keep that guard disciplined.', 'Good. Keep protecting yourself.'],
-  distance: ['Good work. Keep owning that distance.', 'Good. Keep leading behind the jab.'],
-  footwork: ['Good work. Keep owning the floor.', 'Good. Keep those feet working.'],
-  breathing: ['Good work. Keep that breathing easy.', 'Good. Stay relaxed and loose.'],
-  rhythm: ['Good work. Keep that rhythm going.', 'Good. Stay in time.'],
-  power: ['Good work. Keep sitting down on it.', 'Good. Keep driving from the floor.'],
-  head: ['Good work. Keep that head moving.', 'Good. Stay off the centre-line.'],
-  output: ['Good work. Keep that work rate up.', 'Good. Keep the hands busy.'],
-  general: ['Good work. Keep it sharp.', 'Good. Stay focused.'],
+  guard: ['Good. Hands home.', 'Yes — hands up.'],
+  distance: ['Good. Own the range.', 'Yes — behind the jab.'],
+  footwork: ['Good. Keep moving.', 'Yes — cut the angle.'],
+  breathing: ['Good. Stay loose.', 'Yes — breathe easy.'],
+  rhythm: ['Good. Stay in time.', 'Yes — keep it flowing.'],
+  power: ['Good. Sit on it.', 'Yes — turn it over.'],
+  head: ['Good. Head moving.', 'Yes — off the line.'],
+  output: ['Good. Busy hands.', 'Yes — stay busy.'],
+  general: ['Good. Stay sharp.', 'Yes — keep it clean.'],
 };
 
 export function encouragementReferenceBank(dimension: Dimension): readonly string[] {

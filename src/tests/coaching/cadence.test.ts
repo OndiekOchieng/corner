@@ -65,10 +65,12 @@ describe('Reinforcement — same lesson, different words', () => {
     ]);
     // First guard cue: as authored.
     expect(sink.spoken).toContain('Keep your hands high');
-    // Later guard cues: reinforced with fresh wording, never the identical line.
-    expect(sink.spoken).toContain("Don't let them drop.");
-    expect(sink.spoken).toContain('Protect yourself.');
-    expect(sink.spoken).not.toContain('Hands up');
+    // Later guard cues: reinforced with fresh, behavioural micro-coaching (PR-028) —
+    // never the identical line, never the raw authored repeat.
+    const reinforced = sink.spoken.filter((l) => /hands home|hands up!|guard!|protect!/i.test(l));
+    expect(reinforced.length).toBeGreaterThanOrEqual(2);
+    expect(new Set(reinforced).size).toBe(reinforced.length); // all distinct wording
+    expect(sink.spoken).not.toContain('Hands up'); // the raw authored cue isn't echoed
     // No identical line twice in a row.
     for (let i = 1; i < sink.spoken.length; i++) {
       expect(sink.spoken[i]).not.toEqual(sink.spoken[i - 1]);
@@ -157,7 +159,7 @@ describe('Cadence — resume after pause', () => {
     rt.onEvent(evt('COACH_CUE', seq++, 40000, { roundIndex: 0, cueId: 'g2', text: 'Hands up', atMs: 40000 }));
 
     expect(afterPause).toContain('Hands high'); // taught before the pause
-    expect(sink.spoken).toContain("Don't let them drop."); // reinforced after resume
+    expect(sink.spoken.some((l) => /hands home|hands up!|guard!|protect!/i.test(l))).toBe(true); // reinforced after resume
     expect(sink.spoken).not.toContain('Hands up'); // never the identical repeat
   });
 });

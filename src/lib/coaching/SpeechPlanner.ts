@@ -154,11 +154,14 @@ export class SpeechPlanner {
   }
 
   /**
-   * Compose the authored session opening (PR-020B): greeting? + opening +
-   * objective? + transition, each a deterministically-rotated variant, joined
-   * into one natural line. The objective segment is included only when the
-   * workout provides a focus/objective. Fully deterministic — rotation is a
-   * CoachingMemory counter, and time-of-day is injected (never read here).
+   * Compose the authored session opening: greeting? + opening + transition, each a
+   * deterministically-rotated variant, joined into one short line. Fully
+   * deterministic — rotation is a CoachingMemory counter, and time-of-day is
+   * injected (never read here).
+   *
+   * PR-028: the intro coaches, it does not brief. It no longer voices the
+   * workout's focus/objective — naming the concept here and again in the round is
+   * teaching it twice (LAW FOUR). "Southpaw today. Let's work." — then get to work.
    */
   private composeIntroduction(params: PlanParams, convo: CoachingMemory): string | null {
     const intro = this.profile.introduction;
@@ -170,12 +173,6 @@ export class SpeechPlanner {
 
     const opening = this.fromBank(intro.opening, `${id}:intro:opening`, convo, 0, params);
     if (opening) parts.push(opening);
-
-    // Voice the objective only when the workout actually provides a focus/objective.
-    if (params.focus || params.objective) {
-      const objective = this.fromBank(intro.objective, `${id}:intro:objective`, convo, 0, params);
-      if (objective) parts.push(objective);
-    }
 
     const transition = this.fromBank(intro.transition, `${id}:intro:transition`, convo, 0, params);
     if (transition) parts.push(transition);

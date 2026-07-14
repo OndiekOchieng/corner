@@ -46,9 +46,9 @@ time, phase machinery); those come from events.
 ### Reinforcement, not repetition
 The first time a dimension is taught in a round, the **authored** cue is spoken
 verbatim. Every later same-dimension cue is voiced from that dimension's reinforcement
-pool, rotated deterministically — *"Keep your hands high" → "Don't let them drop." →
-"Protect yourself."* Recent-text memory guarantees **no identical wording** ever
-repeats.
+pool, rotated deterministically — *"Keep your hands high" → "Hands home!" → "Guard!"*
+Recent-text memory guarantees **no identical wording** ever repeats. Per PR-028 the
+pool is behavioural micro-coaching — see [COACHING_DOCTRINE.md](COACHING_DOCTRINE.md).
 
 ### Concept progression
 `reinforcementCounts` tracks how often each concept has been reinforced, so the coach
@@ -57,8 +57,8 @@ is building an athlete across concepts rather than replaying one recording.
 
 ### Encouragement that references teaching
 When a round ends and encouragement is *earned* (the silence gate still decides),
-`lastTaughtDimension` lets praise reinforce the lesson — *"Good work. Keep that guard
-disciplined."* — instead of a hollow *"Great job."* These lines are **instructions
+`lastTaughtDimension` lets praise reinforce the lesson — *"Good. Hands home."* —
+instead of a hollow *"Great job."* These lines are **instructions
 about the taught concept, never observations**: the coach still never claims to see
 the athlete.
 
