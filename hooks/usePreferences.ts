@@ -12,8 +12,6 @@ const DEFAULT_PREFERENCES: UserPreferences = {
   volume: 0.8,
   voiceURI: null,
   coachPack: 'fightnight',
-  theme: 'dark',
-  restWarning: 10,
 };
 
 export function usePreferences() {

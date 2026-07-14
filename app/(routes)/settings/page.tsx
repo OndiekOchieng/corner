@@ -7,7 +7,6 @@ import {
   SettingGroup,
   SettingRow,
   Toggle,
-  SegmentedChoice,
 } from '@/components/Settings/SettingsControls';
 import { usePreferences } from '@/hooks/usePreferences';
 import { useSpeechCoach } from '@/hooks';
@@ -49,15 +48,15 @@ export default function SettingsPage() {
         <UpLink href="/" label="Home" />
         <h1 className="mt-3 text-4xl font-bold tracking-tight">Settings</h1>
         <p className="mt-2 text-muted-foreground">
-          Tune how the coach sounds and behaves.
+          Set up your coach the way you like to train.
         </p>
       </header>
 
       <div className="space-y-8">
-        {/* --- Your coach --------------------------------------------------- */}
+        {/* --- Your coach: who's in your corner, and how they sound --------- */}
         <SettingGroup
           title="Your coach"
-          description="Same workout, a different coach in your corner."
+          description="Who's in your corner — and how they sound."
         >
           <div className="grid grid-cols-2 gap-2 p-4">
             {COACHES.map((coach) => {
@@ -83,39 +82,7 @@ export default function SettingsPage() {
               );
             })}
           </div>
-        </SettingGroup>
 
-        {/* --- Coaching ------------------------------------------------------ */}
-        <SettingGroup
-          title="Coaching"
-          description="What the coach says and when."
-        >
-          <SettingRow
-            label="Voice coaching"
-            description="Spoken cues, counts, and encouragement during the workout."
-            control={
-              <Toggle
-                checked={preferences.speechEnabled}
-                onChange={toggleSpeech}
-                label="Voice coaching"
-              />
-            }
-          />
-          <SettingRow
-            label="Rest warning"
-            description="Heads-up before the next round begins."
-          >
-            <SegmentedChoice
-              options={[5, 10, 15] as const}
-              value={preferences.restWarning}
-              onChange={(seconds) => updatePreferences({ restWarning: seconds })}
-              format={(s) => `${s}s`}
-            />
-          </SettingRow>
-        </SettingGroup>
-
-        {/* --- Voice --------------------------------------------------------- */}
-        <SettingGroup title="Voice" description="How the coach's voice sounds.">
           <SettingRow label="Voice" htmlFor="voice-select">
             <select
               id="voice-select"
@@ -141,7 +108,7 @@ export default function SettingsPage() {
           </SettingRow>
 
           <SettingRow
-            label={`Speed · ${preferences.voiceRate.toFixed(1)}×`}
+            label={`Speaking speed · ${preferences.voiceRate.toFixed(1)}×`}
             htmlFor="voice-rate"
           >
             <input
@@ -193,10 +160,32 @@ export default function SettingsPage() {
               className={sliderClass}
             />
           </SettingRow>
+
+          {/* Coach & voice apply next time out — a session always keeps one voice. */}
+          <div className="p-5">
+            <p className="text-sm text-muted-foreground">
+              A new coach or voice takes over at your next workout — a session always
+              keeps a single voice from the first word to the last.
+            </p>
+          </div>
         </SettingGroup>
 
-        {/* --- Sound --------------------------------------------------------- */}
-        <SettingGroup title="Sound" description="Bells and transitions.">
+        {/* --- Training: how the coach shows up during a session ------------ */}
+        <SettingGroup
+          title="Training"
+          description="How the coach shows up during a session."
+        >
+          <SettingRow
+            label="Voice coaching"
+            description="Spoken cues, counts, and encouragement while you train."
+            control={
+              <Toggle
+                checked={preferences.speechEnabled}
+                onChange={toggleSpeech}
+                label="Voice coaching"
+              />
+            }
+          />
           <SettingRow
             label="Round bells"
             description="Ring the bell on round and rest transitions."
@@ -210,26 +199,26 @@ export default function SettingsPage() {
           />
         </SettingGroup>
 
-        {/* --- Accessibility (informational) -------------------------------- */}
+        {/* --- Accessibility (informational, device-driven) ---------------- */}
         <SettingGroup
           title="Accessibility"
           description="Corner follows your device."
         >
           <SettingRow
             label="Reduced motion"
-            description="When your device asks for reduced motion, animations are turned off automatically."
+            description="When your device asks for reduced motion, animations turn off automatically."
           />
           <SettingRow
             label="Large text"
-            description="Timer and cues stay legible with your system text-size settings."
+            description="Coaching cues scale with your browser's text-size setting; the timer stays large by design."
           />
         </SettingGroup>
 
         {/* --- Application --------------------------------------------------- */}
         <SettingGroup title="Application">
           <SettingRow
-            label="Reset to defaults"
-            description="Restore all coaching and voice settings."
+            label="Reset settings"
+            description="Put your coach and voice back to their defaults."
             control={
               <Button variant="outline" className="h-11 px-4" onClick={resetPreferences}>
                 Reset

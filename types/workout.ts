@@ -107,8 +107,6 @@ export interface UserPreferences {
   volume: number; // 0 to 1.0
   voiceURI: string | null; // selected speech-synthesis voice (null = browser default)
   coachPack: CoachPack; // which coach is in your corner
-  theme: 'dark' | 'light';
-  restWarning: number; // seconds before rest ends (5, 10, 15)
 }
 
 export interface CustomWorkout extends Workout {
