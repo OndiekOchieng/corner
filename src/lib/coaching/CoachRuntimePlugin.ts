@@ -29,6 +29,8 @@ export interface CoachRuntimePluginOptions {
   readonly facts?: SessionFacts;
   /** Semantic combination metadata keyed by cue id (PR-020D). */
   readonly combinations?: ReadonlyMap<string, readonly number[]>;
+  /** The workout's engine countdown thresholds (PR-022); defaults to the engine default. */
+  readonly countdownLeadSeconds?: readonly number[];
   readonly config?: Partial<CoachConfig>;
   readonly priority?: number;
 }
@@ -63,6 +65,7 @@ export function createCoachRuntimePlugin(options: CoachRuntimePluginOptions): Co
     workoutName: options.workoutName,
     facts: options.facts,
     combinations: options.combinations,
+    countdownLeadSeconds: options.countdownLeadSeconds,
     config: options.config,
   });
   const runtime = new CoachRuntime(context, options.sink);

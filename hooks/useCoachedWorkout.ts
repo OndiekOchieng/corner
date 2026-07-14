@@ -133,10 +133,18 @@ export function useCoachedWorkout(
     media.configureSpeech(speechSettings(s));
     media.setBellsEnabled(s.bellsEnabled);
 
+    // Build the engine config ONCE and share it with the coach, so the coach's
+    // countdown-preemption thresholds are the same ones the engine schedules
+    // against (PR-022) — a single source of truth per workout.
+    const workoutConfig = toWorkoutConfig(workout);
+
     const coach = createCoachRuntimePlugin({
       personality: s.coachPack,
       sink: media.speechSink(),
       workoutName: workout.name,
+      // Countdown thresholds derived from the same engine config (PR-022).
+      // undefined ⇒ the coach falls back to the engine default.
+      countdownLeadSeconds: workoutConfig.countdownLeadSeconds,
       // Workout facts + injected time of day for the session introduction (PR-020B).
       // Time is read HERE (the browser edge) and passed in — the Coach Runtime
       // never reads a clock, so its output stays deterministic.
@@ -150,7 +158,7 @@ export function useCoachedWorkout(
       // combination up here so it can render it per pack. No Engine change.
       combinations: buildCombinations(workout),
     });
-    const runtime = createHostRuntime(toWorkoutConfig(workout), {
+    const runtime = createHostRuntime(workoutConfig, {
       subscribers: [coach, createMediaRuntimePlugin(media)],
     });
 

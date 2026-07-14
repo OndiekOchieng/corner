@@ -103,9 +103,13 @@ Before starting a coaching line, the coach estimates whether it can finish befor
 next **countdown beat** — and skips it if not, rather than letting *"Ten… Nine…"* cut it
 off mid-word.
 
-- The engine's countdown beats are the fixed thresholds `[10, 5, 4, 3, 2, 1]` seconds
-  remaining. The coach mirrors them and computes the **soonest** beat at/after now from
-  the round-end deadline (`roundEndsAtMs`, recorded on `ROUND_STARTED`).
+- The countdown beats (seconds remaining) come from the **engine config** for this
+  workout — `WorkoutConfig.countdownLeadSeconds`, defaulting to the engine's
+  `DEFAULT_COUNTDOWN_LEAD_SECONDS` (`[10, 5, 4, 3, 2, 1]`). They flow into the coach via
+  `CoachContext.countdownLeadSeconds` (PR-022) — a single source of truth, so a custom
+  countdown is honoured and there is no duplicated constant to drift. The coach computes
+  the **soonest** beat at/after now from the round-end deadline (`roundEndsAtMs`, recorded
+  on `ROUND_STARTED`).
 - Speech duration is a deterministic estimate of the text (`estimateSpeechMs` ≈ 167 wpm).
 - If `now + estimate + buffer > nextBeat`, the (non-structural, non-critical) line is
   **skipped**. Countdown and finish are exempt and always land.

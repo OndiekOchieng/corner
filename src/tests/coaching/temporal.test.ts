@@ -125,4 +125,31 @@ describe('Countdown preemption (PR-021)', () => {
   it('never begins late coaching that would be interrupted (deterministic)', () => {
     expect(preemptSession().spoken).toEqual(preemptSession().spoken);
   });
+
+  // PR-022 — the coach derives its beats from the workout's engine config, not a
+  // duplicated constant. A cue at 49 500 in a 60 s round collides with the default
+  // 10 s beat (@50 000), but not with a config whose largest beat is 6 s (@54 000).
+  it('derives countdown beats from engine config (custom thresholds honoured)', () => {
+    const runWithLeads = (leads?: number[]) => {
+      const sink = new SpySink();
+      const rt = new CoachRuntime(
+        makeContext('technical', { workoutName: 'W', countdownLeadSeconds: leads }),
+        sink,
+      );
+      let seq = 1;
+      const push = (type: EvtArgs[0], elapsed: number, data: unknown) =>
+        rt.onEvent(evt(type, seq++, elapsed, data as never));
+      push('WORKOUT_STARTED', 0, { workoutId: 'w', totalRounds: 1, plannedDurationMs: 60000, hasWarmup: false });
+      push('ROUND_STARTED', 0, { roundIndex: 0, roundNumber: 1, round: { id: 'r', name: 'Jab', workMs: 60000, restMs: 0, cues: [] }, durationMs: 60000 });
+      push('COACH_CUE', 49500, { roundIndex: 0, cueId: 'late', text: 'Stay on your feet', atMs: 49500 });
+      return sink.spoken;
+    };
+
+    // Engine default beats include a 10 s beat (@50 000) → the cue collides → skipped.
+    expect(runWithLeads(undefined)).not.toContain('Stay on your feet');
+    // A config whose earliest beat is 6 s (@54 000) leaves room → the cue is spoken.
+    expect(runWithLeads([6, 3, 1])).toContain('Stay on your feet');
+    // Unsorted config is normalised to descending and behaves identically.
+    expect(runWithLeads([1, 3, 6])).toContain('Stay on your feet');
+  });
 });

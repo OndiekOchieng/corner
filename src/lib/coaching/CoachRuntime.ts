@@ -38,15 +38,6 @@ import { CoachDiagnostics, type CoachDiagnosticsSnapshot } from './CoachDiagnost
 import { personalityFor, type PersonalityProfile } from './personalities';
 import { nextUntaughtSign, callSign } from './BoxingLexicon';
 
-/**
- * Countdown beats, seconds remaining — mirrors the engine's default thresholds
- * (Marker.ts DEFAULT_COUNTDOWN_LEAD_SECONDS). Descending, so the first beat that
- * fits the remaining time is the SOONEST one. Used to decide whether a coaching
- * line can finish before "Ten… Nine…" (PR-021). Not an engine import — a small,
- * documented mirror the coach reasons against.
- */
-const COUNTDOWN_THRESHOLDS_SEC = [10, 5, 4, 3, 2, 1] as const;
-
 /** A small safety margin over the speech estimate, so a line clears the beat cleanly. */
 const COUNTDOWN_PREEMPT_BUFFER_MS = 250;
 
@@ -226,7 +217,9 @@ export class CoachRuntime {
     const roundEnd = this.convo.roundEndsAtMs();
     if (roundEnd == null || nowMs >= roundEnd) return null;
     const remainingMs = roundEnd - nowMs;
-    for (const t of COUNTDOWN_THRESHOLDS_SEC) {
+    // Thresholds come from engine config (PR-022), sorted descending — so the first
+    // beat that fits the remaining time is the soonest one.
+    for (const t of this.context.countdownLeadSeconds) {
       const beatMs = t * 1000;
       if (beatMs <= remainingMs) return roundEnd - beatMs; // the next beat
     }

@@ -9,6 +9,9 @@
 
 import type { CoachPackId } from './CoachAction';
 import type { TimeOfDay } from './SessionIntroduction';
+// The engine owns the countdown thresholds; the coach derives its preemption
+// deadlines from the same source of truth (PR-022), never a duplicated constant.
+import { DEFAULT_COUNTDOWN_LEAD_SECONDS } from '../engine';
 
 export interface CoachConfig {
   /** Minimum quiet between two non-structural coaching lines (Silence Guide density). */
@@ -71,6 +74,13 @@ export interface CoachContext {
    * a plain instruction.
    */
   readonly combinations: ReadonlyMap<string, readonly number[]>;
+  /**
+   * The engine's countdown thresholds (seconds remaining) for THIS workout,
+   * sorted descending (PR-022). The coach's structural-deadline preemption reasons
+   * against these — derived from engine config, so a custom `countdownLeadSeconds`
+   * is honoured and there is no duplicated constant to drift.
+   */
+  readonly countdownLeadSeconds: readonly number[];
   readonly config: CoachConfig;
 }
 
@@ -80,14 +90,19 @@ export function makeContext(
     workoutName?: string;
     facts?: SessionFacts;
     combinations?: ReadonlyMap<string, readonly number[]>;
+    /** From the engine's WorkoutConfig; falls back to the engine default. */
+    countdownLeadSeconds?: readonly number[];
     config?: Partial<CoachConfig>;
   } = {},
 ): CoachContext {
+  const leads = options.countdownLeadSeconds ?? DEFAULT_COUNTDOWN_LEAD_SECONDS;
   return {
     personality,
     workoutName: options.workoutName,
     facts: options.facts ?? {},
     combinations: options.combinations ?? new Map(),
+    // Normalise to descending so "the soonest beat that fits" is a simple scan.
+    countdownLeadSeconds: [...leads].sort((a, b) => b - a),
     config: { ...DEFAULT_COACH_CONFIG, ...options.config },
   };
 }
