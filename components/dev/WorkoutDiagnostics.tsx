@@ -100,7 +100,14 @@ export function WorkoutDiagnostics({ getMediaDiagnostics, getSpeechTrace, workou
                 k="speech"
                 v={`avail:${yn(media.speechAvailable)} · ready:${yn(media.voicesReady)} · voices:${media.voiceCount} · ${media.selectedVoice ?? 'default'}`}
               />
-              <Row k="wakelock" v={media.wakeLockStatus} />
+              <Row
+                k="wakelock"
+                v={`${media.wakeLockStatus} · sup:${yn(media.wakeLockSupported)} held:${yn(media.wakeLockHeld)}`}
+              />
+              <Row
+                k="wakelock counts"
+                v={`req:${media.wakeLockRequested} acq:${media.wakeLockAcquired} rel:${media.wakeLockReleased} reacq:${media.wakeLockReacquired}`}
+              />
             </>
           ) : (
             <Row k="media" v="(initializing…)" />

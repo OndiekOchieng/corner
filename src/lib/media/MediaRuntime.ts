@@ -170,8 +170,8 @@ export class MediaRuntime {
   }
 
   /** The workout ended (finished or cancelled): release the screen. */
-  end(): Promise<void> {
-    return this.enqueueLifecycle(() => this.doEnd());
+  end(reason = 'workout-end'): Promise<void> {
+    return this.enqueueLifecycle(() => this.doEnd(reason));
   }
 
   private enqueueLifecycle(op: () => Promise<void>): Promise<void> {
@@ -181,15 +181,19 @@ export class MediaRuntime {
   }
 
   private async doBegin(): Promise<void> {
+    // Keep the screen awake FIRST, independent of audio (PR-025). Audio unlock's
+    // ctx.resume() can stay PENDING on iOS without a gesture; awaiting it before the
+    // wake lock would block acquisition entirely and let the screen sleep even where
+    // the Wake Lock API is supported. The lock is its own concern — take it up front.
+    await this.wakeLock.acquire('workout-start');
     // unlock() ensures the context exists, then resumes it (autoplay-aware).
     const unlocked = await this.audio.unlock();
     this.diag.setAudioUnlocked(this.audio.isUnlocked());
-    await this.wakeLock.acquire();
     if (!unlocked) this.armGestureUnlock();
   }
 
-  private async doEnd(): Promise<void> {
-    await this.wakeLock.release();
+  private async doEnd(reason: string): Promise<void> {
+    await this.wakeLock.release(reason);
   }
 
   /** Event-driven lifecycle + bells. Called by the MediaRuntimePlugin. */
@@ -206,10 +210,10 @@ export class MediaRuntime {
         break;
       case 'WORKOUT_COMPLETED':
         this.bell('finish');
-        void this.end();
+        void this.end('workout-completed');
         break;
       case 'WORKOUT_CANCELLED':
-        void this.end();
+        void this.end('workout-cancelled');
         break;
       default:
         break;
@@ -225,7 +229,7 @@ export class MediaRuntime {
   private handleVisible(): void {
     this.diag.setVisibility('visible');
     void this.audio.resume().then(() => this.diag.setAudioUnlocked(this.audio.isUnlocked()));
-    void this.wakeLock.reacquireIfWanted();
+    void this.wakeLock.reacquireIfWanted('visibility-return');
   }
 
   private handleHidden(): void {
@@ -243,6 +247,7 @@ export class MediaRuntime {
     this.diag.setSelectedVoice(this.speech.selectedVoice());
     this.diag.setVoicesReady(this.speech.isVoicesReady());
     this.diag.setSpeechAvailable(this.speech.isAvailable());
+    this.diag.setWakeLock(this.wakeLock.stats());
     const vr = this.speech.voiceDiagnostics();
     this.diag.setVoiceReadiness({
       ready: vr.ready,
@@ -287,7 +292,7 @@ export class MediaRuntime {
     this.disposed = true;
     this.unsubVisibility?.();
     this.gestureCleanup?.();
-    void this.wakeLock.release();
+    void this.wakeLock.release('dispose');
     this.speech.dispose();
     this.audio.dispose();
   }

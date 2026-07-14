@@ -8,7 +8,7 @@
  */
 
 import type { CapabilitySnapshot } from './CapabilityService';
-import type { WakeLockStatus } from './WakeLockManager';
+import type { WakeLockStatus, WakeLockStats } from './WakeLockManager';
 
 export type VisibilityState = 'visible' | 'hidden' | 'unknown';
 export type BrowserCompatibility = 'full' | 'partial' | 'minimal';
@@ -19,6 +19,14 @@ export interface MediaDiagnosticsSnapshot {
   readonly speechAvailable: boolean;
   readonly voicesReady: boolean;
   readonly wakeLockStatus: WakeLockStatus;
+  // --- Wake lock verification (PR-025) --------------------------------------
+  readonly wakeLockSupported: boolean;
+  /** True while a sentinel is genuinely held right now. */
+  readonly wakeLockHeld: boolean;
+  readonly wakeLockRequested: number;
+  readonly wakeLockAcquired: number;
+  readonly wakeLockReleased: number;
+  readonly wakeLockReacquired: number;
   readonly capabilities: CapabilitySnapshot;
   readonly resumeCount: number;
   readonly autoplayFailures: number;
@@ -57,6 +65,12 @@ export class MediaDiagnostics {
   private speechAvailable: boolean;
   private voicesReady = false;
   private wakeLockStatus: WakeLockStatus;
+  private wakeLockSupported = false;
+  private wakeLockHeld = false;
+  private wakeLockRequested = 0;
+  private wakeLockAcquired = 0;
+  private wakeLockReleased = 0;
+  private wakeLockReacquired = 0;
   private resumeCount = 0;
   private autoplayFailures = 0;
   private visibility: VisibilityState;
@@ -95,6 +109,16 @@ export class MediaDiagnostics {
   setWakeLockStatus(s: WakeLockStatus): void {
     this.wakeLockStatus = s;
   }
+  /** Fold in a live wake-lock snapshot for verification (PR-025). */
+  setWakeLock(stats: WakeLockStats): void {
+    this.wakeLockStatus = stats.status;
+    this.wakeLockSupported = stats.supported;
+    this.wakeLockHeld = stats.held;
+    this.wakeLockRequested = stats.requested;
+    this.wakeLockAcquired = stats.acquired;
+    this.wakeLockReleased = stats.released;
+    this.wakeLockReacquired = stats.reacquired;
+  }
   setVisibility(v: VisibilityState): void {
     this.visibility = v;
   }
@@ -129,6 +153,12 @@ export class MediaDiagnostics {
       speechAvailable: this.speechAvailable,
       voicesReady: this.voicesReady,
       wakeLockStatus: this.wakeLockStatus,
+      wakeLockSupported: this.wakeLockSupported,
+      wakeLockHeld: this.wakeLockHeld,
+      wakeLockRequested: this.wakeLockRequested,
+      wakeLockAcquired: this.wakeLockAcquired,
+      wakeLockReleased: this.wakeLockReleased,
+      wakeLockReacquired: this.wakeLockReacquired,
       capabilities: this.capabilities,
       resumeCount: this.resumeCount,
       autoplayFailures: this.autoplayFailures,

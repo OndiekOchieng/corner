@@ -196,3 +196,100 @@ describe('MediaRuntimePlugin — the athlete hears a full workout', () => {
     expect(plugin.canHandle({ type: 'COUNTDOWN_SECOND', at: 0, elapsedMs: 0, seq: 9, data: { context: 'round', secondsRemaining: 5 } })).toBe(false);
   });
 });
+
+// --- Wake lock verification & hardening (PR-025) -----------------------------
+
+const PAUSED = { type: 'WORKOUT_PAUSED', at: 500, elapsedMs: 500, seq: 4, data: { phase: 'round', elapsedMs: 500 } } as never;
+const RESUMED = { type: 'WORKOUT_RESUMED', at: 500, elapsedMs: 500, seq: 5, data: { phase: 'round', elapsedMs: 500, pausedForMs: 0 } } as never;
+const CANCELLED = { type: 'WORKOUT_CANCELLED', at: 600, elapsedMs: 600, seq: 6, data: { id: 's', workoutId: 'w', status: 'cancelled', plannedRounds: 3, plannedDurationMs: 1000 } } as never;
+
+describe('MediaRuntime — wake lock (PR-025)', () => {
+  it('acquires the wake lock even when audio unlock HANGS (iOS resume stays pending)', async () => {
+    const { media, ctx, wakeLock } = build();
+    ctx.resumeShouldHang = true; // iOS: ctx.resume() never resolves without a gesture
+    media.onEvent(STARTED);
+    await tick();
+    // The screen is kept awake regardless — the lock is no longer gated behind audio.
+    expect(wakeLock.requests).toBe(1);
+    expect(media.diagnostics().wakeLockStatus).toBe('active');
+    expect(media.diagnostics().wakeLockHeld).toBe(true);
+    // Audio is still stuck (the hang), proving the two are decoupled.
+    expect(media.diagnostics().audioUnlocked).toBe(false);
+  });
+
+  it('holds the wake lock across pause/resume', async () => {
+    const { media, wakeLock } = build();
+    media.onEvent(STARTED);
+    await tick();
+    expect(media.diagnostics().wakeLockStatus).toBe('active');
+    media.onEvent(PAUSED);
+    media.onEvent(RESUMED);
+    await tick();
+    expect(media.diagnostics().wakeLockStatus).toBe('active'); // never released by pause/resume
+    expect(wakeLock.last?.released).toBe(false);
+  });
+
+  it('reacquires after a visibility drop and counts it', async () => {
+    const { media, wakeLock, visibility } = build();
+    media.onEvent(STARTED);
+    await tick();
+    wakeLock.last!.emitRelease(); // browser drops the lock when hidden
+    visibility.hide();
+    visibility.show();
+    await tick();
+    expect(wakeLock.requests).toBe(2);
+    expect(media.diagnostics().wakeLockReacquired).toBe(1);
+    expect(media.diagnostics().wakeLockHeld).toBe(true);
+  });
+
+  it('releases on quit (WORKOUT_CANCELLED) and on dispose', async () => {
+    const { media, wakeLock } = build();
+    media.onEvent(STARTED);
+    await tick();
+    media.onEvent(CANCELLED);
+    await tick();
+    expect(wakeLock.last?.released).toBe(true);
+    expect(media.diagnostics().wakeLockStatus).toBe('released');
+    expect(media.diagnostics().wakeLockHeld).toBe(false);
+
+    const second = build();
+    second.media.onEvent(STARTED);
+    await tick();
+    second.media.dispose();
+    await tick();
+    expect(second.wakeLock.last?.released).toBe(true);
+  });
+
+  it('counts requested / acquired / released for verification', async () => {
+    const { media } = build();
+    media.onEvent(STARTED);
+    await tick();
+    let d = media.diagnostics();
+    expect(d.wakeLockSupported).toBe(true);
+    expect(d.wakeLockRequested).toBe(1);
+    expect(d.wakeLockAcquired).toBe(1);
+    media.onEvent(COMPLETED);
+    await tick();
+    d = media.diagnostics();
+    expect(d.wakeLockReleased).toBe(1);
+  });
+
+  it('degrades gracefully where the Wake Lock API is unsupported', async () => {
+    const ctx = new FakeAudioContext();
+    const media = new MediaRuntime({
+      capabilityEnv: { speechSynthesis: {}, audioContext: function () {}, wakeLock: undefined, visibilitySupported: true },
+      audioContextFactory: () => ctx,
+      speechEngine: new FakeSpeechEngine(),
+      wakeLockApi: null, // unsupported
+      visibility: null,
+      gestureTarget: null,
+    });
+    media.onEvent(STARTED);
+    await tick();
+    const d = media.diagnostics();
+    expect(d.wakeLockSupported).toBe(false);
+    expect(d.wakeLockStatus).toBe('unsupported');
+    expect(d.wakeLockHeld).toBe(false);
+    expect(() => media.onEvent(COMPLETED)).not.toThrow();
+  });
+});

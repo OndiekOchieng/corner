@@ -40,10 +40,13 @@ export class FakeAudioContext implements AudioContextLike {
   suspendCalls = 0;
   closeCalls = 0;
   resumeShouldReject = false;
+  /** iOS: resume() can stay pending (never resolves) without a gesture (PR-025). */
+  resumeShouldHang = false;
 
   async resume(): Promise<void> {
     this.resumeCalls += 1;
     if (this.resumeShouldReject) throw new Error('autoplay blocked');
+    if (this.resumeShouldHang) return new Promise<void>(() => {}); // never resolves
     this.state = 'running';
   }
   async suspend(): Promise<void> {
