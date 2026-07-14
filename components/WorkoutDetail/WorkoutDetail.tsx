@@ -2,13 +2,14 @@
 
 import Link from 'next/link';
 import { buttonVariants } from '@/components/ui/button';
+import { UpLink } from '@/components/ui/UpLink';
 import { RoundPreview } from './RoundPreview';
 import { Workout } from '@/types/workout';
 import { formatRoundTime } from '@/lib/formatting';
 import { STANCE_LABELS, DIFFICULTY_COLORS } from '@/lib/constants';
 import { cn } from '@/lib/utils';
 import { primeSpeechFromGesture } from '@/src/lib/media';
-import { ChevronLeft, Play } from 'lucide-react';
+import { Play } from 'lucide-react';
 
 interface WorkoutDetailProps {
   workout: Workout;
@@ -23,16 +24,12 @@ export function WorkoutDetail({ workout }: WorkoutDetailProps) {
 
   return (
     <div className="animate-rise space-y-8 pb-28">
-      <Link
-        href="/workouts"
-        className={cn(buttonVariants({ variant: 'ghost' }), 'h-11 gap-1.5 px-3')}
-      >
-        <ChevronLeft className="size-4" />
-        Library
-      </Link>
-
-      <div>
-        <div className="mb-3 flex flex-wrap gap-2">
+      {/* Title-owned header: the eyebrow up-link, then the name as the hero, with
+          difficulty/stance as a quiet meta line beneath it. */}
+      <header>
+        <UpLink href="/workouts" label="Library" />
+        <h1 className="mt-3 text-4xl font-bold tracking-tight text-balance">{workout.name}</h1>
+        <div className="mt-3 flex flex-wrap gap-2">
           <span
             className={`rounded-full px-2.5 py-1 text-xs font-semibold ${DIFFICULTY_COLORS[workout.difficulty]}`}
           >
@@ -42,9 +39,8 @@ export function WorkoutDetail({ workout }: WorkoutDetailProps) {
             {STANCE_LABELS[workout.stance]}
           </span>
         </div>
-        <h1 className="text-4xl font-bold tracking-tight text-balance">{workout.name}</h1>
-        <p className="mt-2 text-lg text-muted-foreground">{workout.description}</p>
-      </div>
+        <p className="mt-3 text-lg text-muted-foreground">{workout.description}</p>
+      </header>
 
       <dl className="grid grid-cols-2 gap-px overflow-hidden rounded-2xl bg-border ring-1 ring-foreground/10 md:grid-cols-4">
         {[

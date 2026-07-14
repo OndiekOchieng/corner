@@ -1,6 +1,6 @@
 'use client';
 
-import { BackLink } from '@/components/ui/BackLink';
+import { UpLink } from '@/components/ui/UpLink';
 import { PageContainer } from '@/components/ui/PageContainer';
 import { Button } from '@/components/ui/button';
 import {
@@ -45,14 +45,13 @@ export default function SettingsPage() {
 
   return (
     <PageContainer>
-      <BackLink href="/" label="Home" />
-
-      <div className="mb-8 mt-6">
-        <h1 className="text-4xl font-bold tracking-tight">Settings</h1>
-        <p className="mt-1 text-muted-foreground">
+      <header className="mb-10">
+        <UpLink href="/" label="Home" />
+        <h1 className="mt-3 text-4xl font-bold tracking-tight">Settings</h1>
+        <p className="mt-2 text-muted-foreground">
           Tune how the coach sounds and behaves.
         </p>
-      </div>
+      </header>
 
       <div className="space-y-8">
         {/* --- Your coach --------------------------------------------------- */}

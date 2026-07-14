@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { BackLink } from '@/components/ui/BackLink';
+import { UpLink } from '@/components/ui/UpLink';
 import { PageContainer } from '@/components/ui/PageContainer';
 import { buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -60,14 +60,13 @@ export default function HistoryPage() {
 
   return (
     <PageContainer>
-      <BackLink href="/" label="Home" />
-
-      <div className="mb-8 mt-6">
-        <h1 className="text-4xl font-bold tracking-tight">History</h1>
-        <p className="mt-1 text-muted-foreground">
+      <header className="mb-10">
+        <UpLink href="/" label="Home" />
+        <h1 className="mt-3 text-4xl font-bold tracking-tight">History</h1>
+        <p className="mt-2 text-muted-foreground">
           Every session you finish, kept in your corner.
         </p>
-      </div>
+      </header>
 
       {sessions === null ? (
         <div className="space-y-3">

@@ -3,6 +3,7 @@
 import { useEffect, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { WorkoutScreen } from '@/components/Workout/WorkoutScreen';
+import { LeaveWorkoutGuard } from '@/components/Workout/LeaveWorkoutGuard';
 import { WorkoutDiagnostics } from '@/components/dev/WorkoutDiagnostics';
 import { useWorkout, usePreferences } from '@/hooks';
 import { useCoachedWorkout, type CoachedWorkoutSettings } from '@/hooks/useCoachedWorkout';
@@ -122,6 +123,9 @@ function ActiveRunner({ workout }: { workout: Workout }) {
 
   return (
     <main>
+      {/* Protect training: no visible back chrome, but guard OS back / swipe-back /
+          refresh so the athlete can't be torn out of a workout by accident. */}
+      <LeaveWorkoutGuard active onEndWorkout={handleQuit} />
       {settings.speechEnabled && !isSupported && (
         <div
           role="status"

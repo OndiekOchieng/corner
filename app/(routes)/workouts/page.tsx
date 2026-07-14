@@ -1,6 +1,6 @@
 'use client';
 
-import { BackLink } from '@/components/ui/BackLink';
+import { UpLink } from '@/components/ui/UpLink';
 import { PageContainer } from '@/components/ui/PageContainer';
 import { WorkoutLibrary } from '@/components/WorkoutLibrary/WorkoutLibrary';
 import { useWorkout } from '@/hooks';
@@ -10,14 +10,13 @@ export default function WorkoutsPage() {
 
   return (
     <PageContainer width="wide">
-      <BackLink href="/" label="Home" />
-
-      <div className="mb-8 mt-6">
-        <h1 className="text-4xl font-bold tracking-tight">Library</h1>
-        <p className="mt-1 text-muted-foreground">
+      <header className="mb-10">
+        <UpLink href="/" label="Home" />
+        <h1 className="mt-3 text-4xl font-bold tracking-tight">Library</h1>
+        <p className="mt-2 text-muted-foreground">
           Choose a session. Every one is built to be run hands-free.
         </p>
-      </div>
+      </header>
 
       {error && (
         <div className="mb-6 rounded-2xl border border-destructive/40 bg-destructive/10 p-4">
