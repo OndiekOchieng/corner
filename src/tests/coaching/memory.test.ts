@@ -69,27 +69,23 @@ describe('BoxingLexicon (PR-020C)', () => {
     expect(renderCombo(COMBO, 'southpaw')).toBe('Lead hand. Rear hand. Rear uppercut.');
   });
 
-  it('teaches a call sign before assuming it, then uses the shorthand', () => {
+  it('teaches through a single exposure (both forms), then uses the shorthand (PR-027B)', () => {
     const m = new CoachingMemory(5);
-    // First two calls teach the two unseen signs, one at a time…
+    // First encounter: both forms in ONE line, and the whole combo becomes known.
     const r1 = renderComboTaught([1, 2], 'fightnight', m);
-    expect(r1.taughtSign).toBe('one');
-    expect(r1.text).toBe('Every time I say one, I mean the jab.');
+    expect(r1.exposedSigns).toEqual(['one', 'two']);
+    expect(r1.text).toBe('One-two. Jab, cross.');
 
+    // Next occurrence: pure shorthand — no repeated translation.
     const r2 = renderComboTaught([1, 2], 'fightnight', m);
-    expect(r2.taughtSign).toBe('two');
-    expect(r2.text).toBe('Every time I say two, I mean the cross.');
-
-    // …then the coach uses the shorthand.
-    const r3 = renderComboTaught([1, 2], 'fightnight', m);
-    expect(r3.taughtSign).toBeUndefined();
-    expect(r3.text).toBe('One-two!');
+    expect(r2.exposedSigns).toBeUndefined();
+    expect(r2.text).toBe('One-two!');
   });
 
   it('name-based packs never need to teach vocabulary', () => {
     const m = new CoachingMemory(5);
     const r = renderComboTaught([1, 2], 'technical', m);
-    expect(r.taughtSign).toBeUndefined();
+    expect(r.exposedSigns).toBeUndefined();
     expect(r.text).toBe('Jab. Cross.');
   });
 
@@ -128,7 +124,7 @@ describe('Reinforcement & continuity (PR-020C)', () => {
 
   it('reinforces the same lesson with different wording — never identical repetition', () => {
     const spoken = run('technical', guardCues);
-    const coaching = spoken.filter((l) => /hands high|drop|protect|guard|home/i.test(l));
+    const coaching = spoken.filter((l) => /hands high|hands|guard|protect|home/i.test(l));
     // The authored line spoke once; the rest reinforced (all distinct wording).
     expect(coaching[0]).toBe('Keep your hands high');
     const unique = new Set(coaching);
@@ -140,14 +136,14 @@ describe('Reinforcement & continuity (PR-020C)', () => {
     const spoken = run('technical', guardCues, { pauseAt: 20000 });
     // The authored line is still spoken only once; later guard cues reinforce.
     expect(spoken.filter((l) => l === 'Keep your hands high')).toHaveLength(1);
-    expect(spoken.some((l) => /don't let them drop|protect yourself|hands home|guard up/i.test(l))).toBe(true);
+    expect(spoken.some((l) => /hands home|hands up!|guard!|protect!/i.test(l))).toBe(true);
   });
 
   it('encouragement references the lesson taught, without claiming to see', () => {
     const planner = new SpeechPlanner(personalityFor('technical'));
     const m = new CoachingMemory(5);
     const line = planner.plan('encouragement', { dimension: 'guard' }, m);
-    expect(line).toBe('Good work. Keep that guard disciplined.');
+    expect(line).toBe('Good. Hands home.');
     // Generic encouragement (no taught dimension) falls back to the pack bank.
     const generic = planner.plan('encouragement', {}, m);
     expect(personalityFor('technical').banks.encouragement).toContain(generic);
@@ -161,7 +157,7 @@ describe('Reinforcement & continuity (PR-020C)', () => {
     // Three guard cues over ~80s yield at most three coaching lines — reinforcement
     // is a substitution, not an extra line.
     const spoken = run('technical', guardCues);
-    const coaching = spoken.filter((l) => /hands high|drop|protect|guard|home/i.test(l));
+    const coaching = spoken.filter((l) => /hands high|hands|guard|protect|home/i.test(l));
     expect(coaching.length).toBeLessThanOrEqual(guardCues.length);
   });
 });

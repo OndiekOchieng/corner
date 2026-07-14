@@ -36,7 +36,7 @@ import { priorityFor } from './PriorityResolver';
 import { QueueManager } from './QueueManager';
 import { CoachDiagnostics, type CoachDiagnosticsSnapshot } from './CoachDiagnostics';
 import { personalityFor, type PersonalityProfile } from './personalities';
-import { nextUntaughtSign, callSign } from './BoxingLexicon';
+import { comboExposesVocabulary, callSign } from './BoxingLexicon';
 
 /** A small safety margin over the speech estimate, so a line clears the beat cleanly. */
 const COUNTDOWN_PREEMPT_BUFFER_MS = 250;
@@ -148,12 +148,15 @@ export class CoachRuntime {
     // (e.g. teaching after the rest intro) see it and space themselves. The
     // dimension is recorded so the next same-dimension cue reinforces (varies).
     this.convo.noteSpoken(candidate.intent, text, event.elapsedMs, candidate.params.dimension);
-    // Teach-before-shorthand (PR-020D): mark the call sign introduced ONLY now
-    // that the combination line is committed to be spoken — a combo silenced by
-    // the density gate above never falsely counts as taught.
+    // Teach-through-exposure (PR-027B): the first time a call-sign pack meets a
+    // combo it says both forms; the WHOLE combo's vocabulary becomes known now that
+    // the line is committed to be spoken (a combo silenced by the density gate above
+    // never falsely counts as exposed). Later occurrences use pure shorthand.
     if (candidate.intent === 'combination' && candidate.params.combination) {
-      const sign = nextUntaughtSign(candidate.params.combination, this.profile.id, this.convo);
-      if (sign != null) this.convo.noteCallSignIntroduced(callSign(sign));
+      const combo = candidate.params.combination;
+      if (comboExposesVocabulary(combo, this.profile.id, this.convo)) {
+        for (const n of combo) this.convo.noteCallSignIntroduced(callSign(n));
+      }
     }
     this.diagnostics.recordGenerated();
 

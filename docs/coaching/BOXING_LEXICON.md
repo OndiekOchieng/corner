@@ -54,22 +54,42 @@ Each pack adopts terminology differently (`PACK_VOCABULARY`). The same `[1, 2, 6
 
 `renderCombo(numbers, packId)` is pure: same combo + pack → same words, always.
 
-## Teaching vocabulary (never assume it)
+## Teaching vocabulary — through exposure (PR-027B)
 
-The coach must never assume the athlete knows the numbers. `renderComboTaught()`
-teaches a call sign the first time it appears, then uses the shorthand — the athlete
-learns the language simply by training:
+The coach must never assume the athlete knows the numbers, but it must not run a
+classroom either. **Teach through exposure:** the FIRST time a call-sign pack meets a
+combination it says *both forms in one line* — the call signs, then the translation —
+and the whole combo's vocabulary is recorded as known. Every later occurrence uses the
+pure shorthand.
 
 ```
-Round 1   "Every time I say one, I mean the jab."     ← taught, remembered
-Later     "Every time I say two, I mean the cross."   ← taught, remembered
-Later     "One-two."                                   ← shorthand (both known)
+First   "One-two-three. Jab, cross, lead hook."   ← both forms, one line → 1,2,3 now known
+Later   "One-two!"                                  ← shorthand (1,2 already known)
+Later   "One-two-three!"                            ← authentic boxing language, no lesson
 ```
 
-Which signs have been introduced lives in [Coaching Memory](COACHING_MEMORY.md)
-(`introducedCallSigns`), so teaching happens exactly once per session and survives
-pause/resume. Name-based packs (Technical, Calm, Southpaw) never need to teach —
-their words are self-explanatory.
+Per pack, the first exposure:
+
+| Pack | First exposure | Later |
+|---|---|---|
+| Fight Night | "One-two-three. Jab, cross, lead hook." | "One-two-three!" |
+| Old School | "One-two. Jab, cross." | "One-two." |
+| Competition | "One-six. Jab, rear uppercut." | "Six. Again." |
+
+**Why one exposure, not one-sign-per-cue.** The earlier model taught a single call sign
+per combination cue, so a call-sign coach stayed in "teaching mode" for an entire
+workout when there were few combo cues — the athlete rarely heard authentic boxing
+language (the PR-027A audit found the default coach never reached shorthand). Exposure
+flips that: one line teaches the whole combination, and from the next occurrence the
+coach speaks like a real corner. The goal is coaching, not instruction — the athlete
+gradually thinks in call signs and never feels they are attending a lesson.
+
+Which signs are known lives in [Coaching Memory](COACHING_MEMORY.md)
+(`introducedCallSigns`); a sign becomes known after its first *translated exposure*,
+recorded at commit time, and survives pause/resume. Name-based packs (Technical, Calm,
+Southpaw) never expose — their words are self-explanatory. (Note: punch **3** is the
+*lead hook* and **4** the *rear hook*, so the translation is "lead hook", not a bare
+"hook".)
 
 ## Boundaries
 
@@ -85,8 +105,9 @@ The lexicon is now driven from the live event stream. Authored cues carry option
 `combination` metadata (`[1, 2, 6]`); the composition builds a `cueId → combination`
 map and passes it on `CoachContext`; the Director recognises a combination cue **by id**
 (no string parsing) and emits a `combination` intent; the SpeechPlanner renders it with
-`planCombo()`, and the runtime marks a taught call sign at *commit* time (so a combo
-silenced by the density gate is never wrongly recorded as taught).
+`planCombo()`, and on a first exposure the runtime records the whole combo's
+vocabulary as known at *commit* time (so a combo silenced by the density gate is never
+wrongly recorded as exposed).
 
 ```
 Cue { kind: 'combination', combination: [1,2,6] }
@@ -94,7 +115,7 @@ Cue { kind: 'combination', combination: [1,2,6] }
   → composition: buildCombinations(workout) → CoachContext.combinations
   → CoachDirector.onEvent(COACH_CUE): combinations.get(cueId) → { intent: 'combination' }
   → SpeechPlanner.plan('combination') → planCombo(numbers, pack, memory)
-  → CoachRuntime commits → marks the taught call sign
+  → CoachRuntime commits → on a first exposure, records the whole combo's vocabulary
 ```
 
 No Engine, Host, Event, Media, or Session change — the combination rides on

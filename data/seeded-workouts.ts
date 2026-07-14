@@ -63,6 +63,8 @@ export const SEEDED_WORKOUTS: Workout[] = [
         coachingCues: [
           {
             id: 'cue-5',
+            kind: 'combination',
+            combination: [1, 2], // jab · cross
             text: 'Throw sharp jabs to set up the cross',
             timeSeconds: 0,
           },
@@ -168,6 +170,8 @@ export const SEEDED_WORKOUTS: Workout[] = [
           },
           {
             id: 'cue-15',
+            kind: 'combination',
+            combination: [1, 2], // lead jab · rear cross (southpaw renders in lead/rear names)
             text: 'Follow with right cross for power',
             timeSeconds: 90,
           },

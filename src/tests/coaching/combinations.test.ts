@@ -45,18 +45,16 @@ describe('Semantic combination cues (PR-020D)', () => {
     // The combination is NOT in the (pack-agnostic) engine event — it is resolved per pack.
   });
 
-  it('teaches a call sign before the shorthand (call-sign pack)', () => {
+  it('teaches through one exposure, then uses shorthand (call-sign pack, PR-027B)', () => {
     const spoken = runCombo('fightnight', { c1: [1, 2, 6] }, [
       { cueId: 'c1', at: 10000 },
       { cueId: 'c1', at: 30000 },
-      { cueId: 'c1', at: 50000 },
-      { cueId: 'c1', at: 70000 },
     ]);
-    const combo = spoken.filter((l) => /every time i say|one-two-six/i.test(l));
-    expect(combo[0]).toBe('Every time I say one, I mean the jab.');
-    expect(combo[1]).toBe('Every time I say two, I mean the cross.');
-    expect(combo[2]).toBe('Every time I say six, I mean the rear uppercut.');
-    expect(combo[3]).toBe('One-two-six!');
+    const combo = spoken.filter((l) => /jab, cross|one-two-six/i.test(l));
+    // First encounter: both forms in one line…
+    expect(combo[0]).toBe('One-two-six. Jab, cross, rear uppercut.');
+    // …then pure shorthand, no repeated translation.
+    expect(combo[1]).toBe('One-two-six!');
   });
 
   it('is backwards compatible — a cue with no combination is spoken verbatim', () => {
@@ -94,5 +92,48 @@ describe('Semantic combination cues (PR-020D)', () => {
     expect(combo?.combination).toEqual([1, 2, 3]); // authored semantically
     expect(renderCombo(combo!.combination!, 'technical')).toBe('Jab. Cross. Lead hook.');
     expect(renderCombo(combo!.combination!, 'fightnight')).toBe('One-two-three!');
+  });
+});
+
+// --- Language progression: teach through exposure (PR-027B) -------------------
+
+describe('Combination language progression (PR-027B)', () => {
+  it('default coach: an ordinary workout produces an exposure, then shorthand', () => {
+    // The real orthodox-power combo tags, in cue order (spaced past the silence gate).
+    const spoken = runCombo(
+      'fightnight',
+      { 'cue-4': [1, 2, 3], 'cue-5': [1, 2], 'cue-8': [1, 2, 3, 6] },
+      [
+        { cueId: 'cue-4', at: 10000 },
+        { cueId: 'cue-5', at: 40000 },
+        { cueId: 'cue-8', at: 70000 },
+      ],
+    );
+    // First combo: both forms in one line (3 = the lead hook, distinct from rear)…
+    expect(spoken).toContain('One-two-three. Jab, cross, lead hook.');
+    // …then the overlapping jab-cross is pure shorthand — no repeated translation.
+    expect(spoken).toContain('One-two!');
+    // No classroom "Every time I say …" lines survive the new model.
+    expect(spoken.some((l) => /every time i say/i.test(l))).toBe(false);
+  });
+
+  it('the same combo: exposure first, then pure shorthand (default coach)', () => {
+    const spoken = runCombo('fightnight', { c1: [1, 2, 3] }, [
+      { cueId: 'c1', at: 10000 },
+      { cueId: 'c1', at: 40000 },
+    ]);
+    const lines = spoken.filter((l) => /jab, cross|one-two-three/i.test(l));
+    expect(lines[0]).toBe('One-two-three. Jab, cross, lead hook.'); // exposure (both forms)
+    expect(lines[1]).toBe('One-two-three!'); // shorthand — authentic boxing language
+  });
+
+  it('one exposure is enough — a single occurrence never blocks the shorthand', () => {
+    // Even Competition (minimal style) exposes once, then speaks its own shorthand.
+    const spoken = runCombo('competition', { c1: [1, 6] }, [
+      { cueId: 'c1', at: 10000 },
+      { cueId: 'c1', at: 40000 },
+    ]);
+    expect(spoken).toContain('One-six. Jab, rear uppercut.'); // exposure
+    expect(spoken).toContain('Six. Again.'); // its own shorthand afterwards
   });
 });

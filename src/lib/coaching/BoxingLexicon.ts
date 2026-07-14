@@ -139,8 +139,36 @@ export interface CallSignMemory {
 
 export interface ComboRender {
   readonly text: string;
-  /** Set when this render taught a call sign instead of firing the combo. */
-  readonly taughtSign?: string;
+  /**
+   * Set on a FIRST exposure (both forms spoken): every call sign in the combo,
+   * which the runtime records as known so later occurrences use pure shorthand.
+   */
+  readonly exposedSigns?: readonly string[];
+}
+
+/** Canonical call-sign shorthand for an exposure, e.g. [1,2,3] → "One-two-three". */
+function callSignShorthand(numbers: readonly number[]): string {
+  return cap(numbers.map((n) => callSign(n)).join('-'));
+}
+
+/** Plain-name translation for an exposure, e.g. [1,2,3] → "Jab, cross, hook". */
+function namesList(numbers: readonly number[], vocab: PackVocabulary): string {
+  return numbers
+    .map((n, i) => (i === 0 ? cap(nameFor(n, vocab)) : nameFor(n, vocab).toLowerCase()))
+    .join(', ');
+}
+
+/**
+ * True when saying this combo to this pack would be a FIRST exposure — a call-sign
+ * pack that still has an unseen sign in the combo. Read-only; the runtime uses it
+ * to mark the whole combo's vocabulary known at commit time.
+ */
+export function comboExposesVocabulary(
+  numbers: readonly number[],
+  packId: CoachPackId,
+  memory: Pick<CallSignMemory, 'hasIntroducedCallSign'>,
+): boolean {
+  return usesCallSigns(packId) && numbers.some((n) => !memory.hasIntroducedCallSign(callSign(n)));
 }
 
 /**
@@ -164,23 +192,37 @@ export function nextUntaughtSign(
 }
 
 /**
- * Decide what to say WITHOUT mutating memory — teach the next unseen sign, else
- * render the shorthand. The runtime marks the sign introduced at COMMIT time (when
- * the line is actually spoken), so a combo silenced by the density gate is not
- * wrongly recorded as taught.
+ * Decide what to say WITHOUT mutating memory (PR-027B — teach through exposure).
+ *
+ *  - Name-based packs: always the plain names ("Jab. Cross. Rear uppercut.").
+ *  - Call-sign packs, FIRST exposure (any unseen sign): BOTH forms in one line —
+ *    the call-sign shorthand then the translation ("One-two-three. Jab, cross,
+ *    hook.") — and every sign in the combo becomes known.
+ *  - Call-sign packs, once known: the pack's own shorthand ("One-two-three!").
+ *
+ * One exposure is enough — this is coaching, not a lesson. The runtime marks the
+ * combo's vocabulary at COMMIT time so a silenced combo isn't wrongly recorded.
  */
 export function planCombo(
   numbers: readonly number[],
   packId: CoachPackId,
   memory: Pick<CallSignMemory, 'hasIntroducedCallSign'>,
 ): ComboRender {
-  const sign = nextUntaughtSign(numbers, packId, memory);
-  if (sign != null) return { text: teachCallSign(sign), taughtSign: callSign(sign) };
+  if (!usesCallSigns(packId)) {
+    return { text: renderCombo(numbers, packId) };
+  }
+  if (comboExposesVocabulary(numbers, packId, memory)) {
+    const vocab = PACK_VOCABULARY[packId];
+    return {
+      text: `${callSignShorthand(numbers)}. ${namesList(numbers, vocab)}.`,
+      exposedSigns: numbers.map((n) => callSign(n)),
+    };
+  }
   return { text: renderCombo(numbers, packId) };
 }
 
 /**
- * Plan a combo AND mark the taught sign in memory (teach-then-shorthand). Used
+ * Plan a combo AND record its vocabulary as known on a first exposure. Used
  * standalone (and in tests); the live runtime uses planCombo + a commit-time mark.
  */
 export function renderComboTaught(
@@ -189,9 +231,6 @@ export function renderComboTaught(
   memory: CallSignMemory,
 ): ComboRender {
   const r = planCombo(numbers, packId, memory);
-  if (r.taughtSign != null) {
-    const sign = nextUntaughtSign(numbers, packId, memory);
-    if (sign != null) memory.noteCallSignIntroduced(callSign(sign));
-  }
+  r.exposedSigns?.forEach((s) => memory.noteCallSignIntroduced(s));
   return r;
 }

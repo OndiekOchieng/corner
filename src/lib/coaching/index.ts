@@ -81,6 +81,7 @@ export {
   renderCombo,
   renderComboTaught,
   planCombo,
+  comboExposesVocabulary,
   nextUntaughtSign,
   teachCallSign,
   type PunchNumber,
