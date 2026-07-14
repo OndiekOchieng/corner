@@ -13,6 +13,7 @@
 import type { CoachIntent } from './CoachAction';
 import type { ConversationState } from './ConversationState';
 import type { PersonalityProfile, ComposedKey } from './personalities';
+import type { SessionGreeting, TimeOfDay } from './SessionIntroduction';
 import { anchorBank, type AnchorKind } from './anchors';
 import { reinforcementBank, type Dimension } from './reinforcements';
 
@@ -30,6 +31,10 @@ export interface PlanParams {
   anchorKind?: AnchorKind;
   /** Layer 3: the coaching dimension, for reinforcement wording. */
   dimension?: Dimension;
+  /** Session-introduction facts (PR-020B): the workout's focus/objective, and the injected time of day. */
+  focus?: string;
+  objective?: string;
+  timeOfDay?: TimeOfDay;
 }
 
 const NUMBER_WORDS = [
@@ -55,6 +60,9 @@ function fill(template: string, params: PlanParams): string {
     .replace(/\{round\}/g, String(params.roundNumber ?? ''))
     .replace(/\{total\}/g, String(params.totalRounds ?? ''))
     .replace(/\{next\}/g, params.nextRoundName ?? 'the next round')
+    // Session-introduction facts (PR-020B).
+    .replace(/\{focus\}/g, params.focus ?? params.objective ?? 'the fundamentals')
+    .replace(/\{objective\}/g, params.objective ?? params.focus ?? 'clean work')
     .replace(/\s+/g, ' ')
     .trim();
 }
@@ -62,7 +70,6 @@ function fill(template: string, params: PlanParams): string {
 /** Which personality bank an intent draws from (null = not bank-composed). */
 function composedKey(intent: CoachIntent, params: PlanParams): ComposedKey | null {
   switch (intent) {
-    case 'workout_intro': return 'workout_intro';
     case 'warmup': return 'warmup';
     case 'round_intro': return params.isFinalRound ? 'round_intro_final' : 'round_intro';
     case 'rest_intro': return 'rest_intro';
@@ -94,6 +101,12 @@ export class SpeechPlanner {
       return s == null ? null : countdownText(s);
     }
 
+    // The session opening is COMPOSED from the pack's authored SessionIntroduction
+    // (greeting? + opening + objective? + transition), not drawn from a flat bank.
+    if (intent === 'workout_intro') {
+      return this.composeIntroduction(params, convo);
+    }
+
     if (intent === 'instruction' || intent === 'reminder' || intent === 'correction') {
       const text = params.cueText?.trim();
       return text ? text : null;
@@ -114,6 +127,56 @@ export class SpeechPlanner {
     const key = composedKey(intent, params);
     if (!key) return null;
     return this.fromBank(this.profile.banks[key], `${this.profile.id}:${key}`, convo, attempt, params);
+  }
+
+  /**
+   * Compose the authored session opening (PR-020B): greeting? + opening +
+   * objective? + transition, each a deterministically-rotated variant, joined
+   * into one natural line. The objective segment is included only when the
+   * workout provides a focus/objective. Fully deterministic — rotation is a
+   * ConversationState counter, and time-of-day is injected (never read here).
+   */
+  private composeIntroduction(params: PlanParams, convo: ConversationState): string | null {
+    const intro = this.profile.introduction;
+    const id = this.profile.id;
+    const parts: string[] = [];
+
+    const greeting = this.pickGreeting(intro.greeting, params.timeOfDay, convo);
+    if (greeting) parts.push(greeting);
+
+    const opening = this.fromBank(intro.opening, `${id}:intro:opening`, convo, 0, params);
+    if (opening) parts.push(opening);
+
+    // Voice the objective only when the workout actually provides a focus/objective.
+    if (params.focus || params.objective) {
+      const objective = this.fromBank(intro.objective, `${id}:intro:objective`, convo, 0, params);
+      if (objective) parts.push(objective);
+    }
+
+    const transition = this.fromBank(intro.transition, `${id}:intro:transition`, convo, 0, params);
+    if (transition) parts.push(transition);
+
+    const text = parts.join(' ').replace(/\s+/g, ' ').trim();
+    return text.length ? text : null;
+  }
+
+  /**
+   * Pick the greeting. A pack that authored no greeting (or none for the given
+   * time of day) gets the neutral bank; time is referenced ONLY when the pack
+   * opted in by authoring that time's bank. Neutral is always the default.
+   */
+  private pickGreeting(
+    greeting: SessionGreeting | undefined,
+    timeOfDay: TimeOfDay | undefined,
+    convo: ConversationState,
+  ): string | null {
+    if (!greeting) return null;
+    let bank: readonly string[] = greeting.neutral;
+    if (timeOfDay && timeOfDay !== 'neutral') {
+      const timed = greeting[timeOfDay];
+      if (timed && timed.length > 0) bank = timed;
+    }
+    return this.fromBank(bank, `${this.profile.id}:intro:greeting`, convo, 0);
   }
 
   /** Pick a rotated variant from a bank; fill placeholders when params are given. */

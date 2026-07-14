@@ -8,6 +8,7 @@
  */
 
 import type { CoachPackId } from './CoachAction';
+import type { TimeOfDay } from './SessionIntroduction';
 
 export interface CoachConfig {
   /** Minimum quiet between two non-structural coaching lines (Silence Guide density). */
@@ -42,21 +43,42 @@ export const DEFAULT_COACH_CONFIG: CoachConfig = {
   teachingEnabled: true,
 };
 
+/**
+ * The workout FACTS the coach frames in its session introduction (PR-020B). The
+ * workout owns these; the Coach Pack owns how they are spoken. All optional — an
+ * absent focus simply omits the objective segment of the opening.
+ */
+export interface SessionFacts {
+  /** The session's focus, e.g. "distance control" (voiced by the intro's objective). */
+  readonly focus?: string;
+  /** An explicit objective sentence, if the workout provides one (falls back to focus). */
+  readonly objective?: string;
+  /** Injected time of day — the coach never reads a clock (determinism). */
+  readonly timeOfDay?: TimeOfDay;
+}
+
 export interface CoachContext {
   /** Which coach is in the corner. */
   readonly personality: CoachPackId;
   /** Display name for the workout (events only carry an id). */
   readonly workoutName?: string;
+  /** Session-introduction facts owned by the workout. */
+  readonly facts: SessionFacts;
   readonly config: CoachConfig;
 }
 
 export function makeContext(
   personality: CoachPackId,
-  options: { workoutName?: string; config?: Partial<CoachConfig> } = {},
+  options: {
+    workoutName?: string;
+    facts?: SessionFacts;
+    config?: Partial<CoachConfig>;
+  } = {},
 ): CoachContext {
   return {
     personality,
     workoutName: options.workoutName,
+    facts: options.facts ?? {},
     config: { ...DEFAULT_COACH_CONFIG, ...options.config },
   };
 }

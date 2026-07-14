@@ -71,6 +71,18 @@ function speechSettings(s: CoachedWorkoutSettings) {
 }
 
 /**
+ * Read the time of day at the browser edge so the Coach Runtime never touches a
+ * clock (determinism). The coach receives this as injected data (PR-020B).
+ */
+function timeOfDayNow(): 'morning' | 'afternoon' | 'evening' | 'neutral' {
+  const hour = new Date().getHours();
+  if (hour < 12) return 'morning';
+  if (hour < 17) return 'afternoon';
+  if (hour < 22) return 'evening';
+  return 'neutral';
+}
+
+/**
  * The live wiring: run the real Execution Engine (Host Runtime), publish its
  * events to the Event Runtime, let the Coach Runtime decide, and let the Media
  * Runtime actually reach the browser — speech, bells, wake lock, visibility.
@@ -108,6 +120,14 @@ export function useCoachedWorkout(
       personality: s.coachPack,
       sink: media.speechSink(),
       workoutName: workout.name,
+      // Workout facts + injected time of day for the session introduction (PR-020B).
+      // Time is read HERE (the browser edge) and passed in — the Coach Runtime
+      // never reads a clock, so its output stays deterministic.
+      facts: {
+        focus: workout.focus,
+        objective: workout.objective,
+        timeOfDay: timeOfDayNow(),
+      },
     });
     const runtime = createHostRuntime(toWorkoutConfig(workout), {
       subscribers: [coach, createMediaRuntimePlugin(media)],

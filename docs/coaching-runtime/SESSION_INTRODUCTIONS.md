@@ -1,8 +1,9 @@
 # Session Introductions — Design (PR-020)
 
-**Status:** Proposed. Design + product decision, no implementation. Specifies how a
-workout's opening becomes its own authoring concept — owned by the Coach Pack, fed by
-workout *facts* — without touching the Engine, Event Runtime, or the browser boundary.
+**Status:** ✅ Implemented (PR-020B). This document is the design; the "As built"
+section at the end records what shipped. A workout's opening is now its own authoring
+concept — owned by the Coach Pack, fed by workout *facts* — with no Engine, Event
+Runtime, or browser-boundary change.
 
 Related: [PERSONALITY_SYSTEM.md](../coaching/PERSONALITY_SYSTEM.md) ·
 [VOICE_GUIDELINES.md](../product/VOICE_GUIDELINES.md) ·
@@ -197,3 +198,36 @@ The design splits into independent, shippable slices (do them in this order):
 3. **Structured `SessionIntroduction`** — add `objective`/`focus` to the workout type,
    the `SessionIntroduction` block to personalities, and the Introduction Planner.
    Largest slice; do last, pack by pack, backwards-compatible with the existing bank.
+
+---
+
+## As built (PR-020B)
+
+Slices 2 and 3 shipped together (slice 1 shipped separately in PR-020A). Coach
+Runtime only — no Engine, Event Runtime, or timing change.
+
+- **`SessionIntroduction`** type (`src/lib/coaching/SessionIntroduction.ts`):
+  `purpose · greeting? · opening · objective · transition · energy`. Authored per pack
+  in `personalities.ts` for all six coaches; the flat `workout_intro` bank was removed.
+- **Composition** lives in `SpeechPlanner.composeIntroduction()`: it joins
+  `greeting? + opening + objective? + transition`, each a **deterministically-rotated**
+  variant (ConversationState counter), fills `{name}`/`{focus}`/`{objective}`, and
+  omits the objective segment when the workout has no focus.
+- **Facts** ride on `CoachContext.facts` (`focus`, `objective`, `timeOfDay`), populated
+  by the composition (`useCoachedWorkout`) from the `Workout` (`focus`/`objective` added
+  to the type; authored on all seeded workouts). The Director passes them into the
+  `workout_intro` params and sets the opening energy from `introduction.energy`.
+- **Time of day** is read at the browser edge (`timeOfDayNow()` in the hook) and
+  injected — the Coach Runtime never calls a clock, so output stays deterministic. A
+  pack references time **only** if it authored that time's greeting bank
+  (Calm: morning/afternoon/evening; Fight Night: evening); neutral is always the
+  default. The hard-coded "Tonight we train…" is gone.
+- **Not gated on voice** here — the Voice Readiness gate (PR-020A) already holds the
+  first utterance in the Media layer; the intro flows through the normal `SpeechSink`.
+- **Tests:** `src/tests/coaching/introductions.test.ts` — different packs → different
+  intros, same objective framed differently, objective omitted without focus, hand-off
+  to round one, greeting/time opt-in, no hard-coded time, deterministic output. Full
+  suite 252 passing.
+
+Deferred (available on `Workout`, not yet voiced by the packs): `difficulty` and
+`stance` as intro facts — the seams exist; wording can be authored later.

@@ -145,10 +145,11 @@ Each coach is defined on eleven axes. Fill all eleven and the coach writes itsel
 
 ---
 
-## Amendment — PR-020: the workout intro becomes a structured `SessionIntroduction`
+## Amendment — PR-020 / 020B: the workout intro is a structured `SessionIntroduction`
 
-The "workout intro" framing moment is promoted from a flat phrase bank to a structured,
-pack-owned authoring concept (design in
+**Shipped in PR-020B.** The "workout intro" framing moment is promoted from a flat
+phrase bank to a structured, pack-owned authoring concept — authored for all six packs
+in `personalities.ts` (design + "as built" in
 [`../coaching-runtime/SESSION_INTRODUCTIONS.md`](../coaching-runtime/SESSION_INTRODUCTIONS.md)):
 
 ```

@@ -14,9 +14,9 @@
  */
 
 import type { CoachPackId } from './CoachAction';
+import type { SessionIntroduction } from './SessionIntroduction';
 
 export type ComposedKey =
-  | 'workout_intro'
   | 'warmup'
   | 'round_intro'
   | 'round_intro_final'
@@ -35,6 +35,8 @@ export interface PersonalityProfile {
   /** 0..1 — higher gives earned encouragement more readily. */
   readonly encouragementBias: number;
   readonly banks: Readonly<Record<ComposedKey, readonly string[]>>;
+  /** The authored session opening (PR-020B) — replaces the old flat workout_intro bank. */
+  readonly introduction: SessionIntroduction;
 }
 
 /** Placeholders: {name} workout, {round} number, {total} rounds, {next} next round. */
@@ -45,10 +47,6 @@ export const PERSONALITIES: Readonly<Record<CoachPackId, PersonalityProfile>> = 
     talkativeness: 0.6,
     encouragementBias: 0.4,
     banks: {
-      workout_intro: [
-        '{name}. Precision first — we build it clean today.',
-        "Today it's {name}. Craft over force. Let's sharpen it.",
-      ],
       warmup: ['Warm up. Find your range, loosen the hips.', 'Ease in. Light and precise.'],
       round_intro: [
         'Round {round}. {name} — build it from the ground up.',
@@ -71,6 +69,13 @@ export const PERSONALITIES: Readonly<Record<CoachPackId, PersonalityProfile>> = 
         '{total} rounds of clean work. Real progress. Well done.',
       ],
     },
+    introduction: {
+      purpose: 'Set a precise, craft-first tone and name the technical focus. Never greets by time.',
+      opening: ['{name}. Precision first today.', "{name}. Let's build it clean."],
+      objective: ["Today's focus is {focus}.", 'The focus: {focus}. Keep it honest.'],
+      transition: ["Round one coming up. Let's get to work.", 'Round one — start sharp.'],
+      energy: 'calm',
+    },
   },
 
   oldschool: {
@@ -79,7 +84,6 @@ export const PERSONALITIES: Readonly<Record<CoachPackId, PersonalityProfile>> = 
     talkativeness: 0.35,
     encouragementBias: 0.2,
     banks: {
-      workout_intro: ['{name}. Nothing fancy. Fundamentals, done right.', "{name}. Let's work."],
       warmup: ['Warm up. Loosen up.', 'Ease in. Get moving.'],
       round_intro: ['Round {round}. {name}. Get to it.', 'Round {round}. {name}.'],
       round_intro_final: ['Round {round}. Last one. {name} — dig in.', 'Final round. {name}. Earn it.'],
@@ -90,6 +94,14 @@ export const PERSONALITIES: Readonly<Record<CoachPackId, PersonalityProfile>> = 
       urgency: ['Work. Finish it.', 'Dig. Now.'],
       finish: ['{total} rounds. That was honest work. Good.', 'Done. {total} rounds. Good work.'],
     },
+    introduction: {
+      purpose: 'Blunt, fundamentals-first opening; no frills, no time references.',
+      greeting: { neutral: ['Right.', 'Okay.'] },
+      opening: ['{name}. No shortcuts today.', '{name}. Nothing fancy — just work.'],
+      objective: ['We work {focus}. Properly.', '{focus}. Do it right.'],
+      transition: ['Round one. Get to it.', "Round one — let's work."],
+      energy: 'steady',
+    },
   },
 
   fightnight: {
@@ -98,10 +110,6 @@ export const PERSONALITIES: Readonly<Record<CoachPackId, PersonalityProfile>> = 
     talkativeness: 0.85,
     encouragementBias: 0.7,
     banks: {
-      workout_intro: [
-        "{name}. Tonight we train like it's the real thing. Composed early, dangerous late.",
-        '{name}. This is the one. Let me see it.',
-      ],
       warmup: ['Warm up. Get loose, get sharp.', 'Ease in — then we go to work.'],
       round_intro: [
         'Round {round}. {name} — let me see those hands.',
@@ -121,6 +129,14 @@ export const PERSONALITIES: Readonly<Record<CoachPackId, PersonalityProfile>> = 
         '{total} rounds — you left it all in there. Respect.',
       ],
     },
+    introduction: {
+      purpose: 'Open with fight-night intensity; may acknowledge the evening (opt-in only).',
+      greeting: { neutral: ['Alright.', "Let's go."], evening: ['Good evening, fighter.', 'Fight night.'] },
+      opening: ["{name}. Let's make every punch count.", '{name}. This is the one.'],
+      objective: ["It's {focus} today — make it count.", 'Focus: {focus}. Sharp and dangerous.'],
+      transition: ['Round one. Let me see those hands.', "Round one — let's work."],
+      energy: 'rising',
+    },
   },
 
   calm: {
@@ -129,10 +145,6 @@ export const PERSONALITIES: Readonly<Record<CoachPackId, PersonalityProfile>> = 
     talkativeness: 0.25,
     encouragementBias: 0.5,
     banks: {
-      workout_intro: [
-        '{name}. Relaxed, clean, no strain. Just move well.',
-        "{name}. Let's flow today. Easy and smooth.",
-      ],
       warmup: ['Warm up. Long, easy breaths.', 'Ease in. Nice and loose.'],
       round_intro: ['Round {round}. {name}. Smooth — find your rhythm.', 'Round {round}. {name}. Easy and clean.'],
       round_intro_final: [
@@ -149,6 +161,19 @@ export const PERSONALITIES: Readonly<Record<CoachPackId, PersonalityProfile>> = 
         '{total} rounds, sustainable and clean. Nicely done.',
       ],
     },
+    introduction: {
+      purpose: 'Settle the athlete; gentle, and may greet warmly by time of day.',
+      greeting: {
+        neutral: ["Let's settle in.", 'Take a breath.'],
+        morning: ['Good morning.', 'Morning. Ease into it.'],
+        afternoon: ['Good afternoon.'],
+        evening: ["Good evening. Let's unwind into it."],
+      },
+      opening: ["{name}. Let's settle in and build.", '{name}. Relaxed and smooth today.'],
+      objective: ["We'll work {focus}, easy and clean.", 'Focus: {focus}. No strain.'],
+      transition: ['Round one, coming up. Nice and easy.', 'Round one — settle in.'],
+      energy: 'calm',
+    },
   },
 
   competition: {
@@ -157,10 +182,6 @@ export const PERSONALITIES: Readonly<Record<CoachPackId, PersonalityProfile>> = 
     talkativeness: 0.6,
     encouragementBias: 0.35,
     banks: {
-      workout_intro: [
-        '{name}. We train to a real standard today. No coasting.',
-        '{name}. Championship habits. Earn every round.',
-      ],
       warmup: ['Warm up. Build it deliberately.', 'Ease in. Prepare properly.'],
       round_intro: [
         'Round {round}. {name}. Hold the standard.',
@@ -180,6 +201,13 @@ export const PERSONALITIES: Readonly<Record<CoachPackId, PersonalityProfile>> = 
         '{total} rounds to a real standard. Excellent work.',
       ],
     },
+    introduction: {
+      purpose: 'Championship-standard framing; no coasting. Does not reference time.',
+      opening: ['{name}. Championship mindset today.', '{name}. We train to a real standard.'],
+      objective: ['The focus: {focus}. Hold the standard.', '{focus} — to a championship level.'],
+      transition: ['Round one. Set the standard.', 'Round one — earn it.'],
+      energy: 'steady',
+    },
   },
 
   southpaw: {
@@ -188,10 +216,6 @@ export const PERSONALITIES: Readonly<Record<CoachPackId, PersonalityProfile>> = 
     talkativeness: 0.55,
     encouragementBias: 0.5,
     banks: {
-      workout_intro: [
-        '{name}. We build the southpaw game — the real one. Your stance is a problem for them.',
-        '{name}. Own the outside, own the angle. Let’s sharpen it.',
-      ],
       warmup: ['Warm up. Feel the lead foot, find your range.', 'Ease in. Get to your angle.'],
       round_intro: [
         'Round {round}. {name}. Own the outside foot.',
@@ -210,6 +234,13 @@ export const PERSONALITIES: Readonly<Record<CoachPackId, PersonalityProfile>> = 
         'That’s the southpaw edge — use it. {total} rounds, great work.',
         '{total} rounds of real southpaw work. Most never learn to deal with it. Great.',
       ],
+    },
+    introduction: {
+      purpose: 'Southpaw-identity opening; own the outside and the angle. No time references.',
+      opening: ["{name}. Let's make your angles count.", '{name}. Own the outside today.'],
+      objective: ['The focus: {focus}. From your angle.', '{focus} — southpaw style.'],
+      transition: ['Round one. Find that outside foot.', 'Round one — work the angle.'],
+      energy: 'steady',
     },
   },
 };

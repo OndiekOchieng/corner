@@ -14,7 +14,7 @@
 import type { Subscriber } from '../runtime';
 import type { WorkoutEvent } from '../engine';
 import type { CoachPackId, SpeechSink } from './CoachAction';
-import type { CoachConfig } from './CoachContext';
+import type { CoachConfig, SessionFacts } from './CoachContext';
 import { makeContext } from './CoachContext';
 import { CoachRuntime } from './CoachRuntime';
 import type { CoachDiagnosticsSnapshot } from './CoachDiagnostics';
@@ -25,6 +25,8 @@ export interface CoachRuntimePluginOptions {
   readonly personality: CoachPackId;
   readonly sink: SpeechSink;
   readonly workoutName?: string;
+  /** Session-introduction facts owned by the workout (PR-020B). */
+  readonly facts?: SessionFacts;
   readonly config?: Partial<CoachConfig>;
   readonly priority?: number;
 }
@@ -57,6 +59,7 @@ export class CoachRuntimePlugin implements Subscriber {
 export function createCoachRuntimePlugin(options: CoachRuntimePluginOptions): CoachRuntimePlugin {
   const context = makeContext(options.personality, {
     workoutName: options.workoutName,
+    facts: options.facts,
     config: options.config,
   });
   const runtime = new CoachRuntime(context, options.sink);

@@ -3,6 +3,7 @@ import { Workout } from '@/types/workout';
 export const SEEDED_WORKOUTS: Workout[] = [
   {
     id: 'workout-orthodox-power',
+    focus: 'straight-punch power and footwork',
     name: 'Orthodox Power',
     description: 'Build power and precision from orthodox stance with focus on straight punches and footwork',
     stance: 'orthodox',
@@ -105,6 +106,7 @@ export const SEEDED_WORKOUTS: Workout[] = [
   },
   {
     id: 'workout-southpaw-fundamentals',
+    focus: 'southpaw footwork and positioning',
     name: 'Southpaw Fundamentals',
     description: 'Master southpaw stance with emphasis on footwork, positioning, and defensive movement',
     stance: 'southpaw',
@@ -192,6 +194,7 @@ export const SEEDED_WORKOUTS: Workout[] = [
   },
   {
     id: 'workout-heavy-bag-cardio',
+    focus: 'speed, endurance, and continuous output',
     name: 'Heavy Bag Cardio',
     description: 'High-intensity cardio workout focusing on speed, endurance, and continuous movement',
     stance: 'both',
@@ -282,6 +285,7 @@ export const SEEDED_WORKOUTS: Workout[] = [
   },
   {
     id: 'workout-footwork-mastery',
+    focus: 'precise footwork and angles',
     name: 'Footwork Mastery',
     description: 'Advanced footwork drill focusing on precision positioning and defensive movement',
     stance: 'both',
@@ -364,6 +368,7 @@ export const SEEDED_WORKOUTS: Workout[] = [
   },
   {
     id: 'workout-fight-simulation',
+    focus: 'composure under pressure',
     name: 'Fight Simulation',
     description: 'Realistic fight scenario with varied intensities and patterns to simulate ring conditions',
     stance: 'both',

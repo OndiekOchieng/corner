@@ -18,6 +18,7 @@ import type { ConversationState } from './ConversationState';
 import type { PlanParams } from './SpeechPlanner';
 import { parseAnchorKind } from './anchors';
 import { classifyDimension } from './reinforcements';
+import { personalityFor } from './personalities';
 
 export interface DirectedIntent {
   readonly intent: CoachIntent;
@@ -44,13 +45,19 @@ export class CoachDirector {
     switch (event.type) {
       case 'WORKOUT_STARTED': {
         convo.setTotalRounds(event.data.totalRounds);
-        convo.setEnergy('calm');
+        // The session opens at the energy the Coach Pack's introduction declares.
+        convo.setEnergy(personalityFor(this.context.personality).introduction.energy);
+        const { facts } = this.context;
         return [
           {
             intent: 'workout_intro',
             params: {
               workoutName: this.context.workoutName ?? event.data.workoutId,
               totalRounds: event.data.totalRounds,
+              // Workout facts the Coach Pack frames in its opening.
+              focus: facts.focus,
+              objective: facts.objective,
+              timeOfDay: facts.timeOfDay,
             },
           },
         ];

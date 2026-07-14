@@ -30,6 +30,10 @@ export interface Workout {
   roundCount: number;
   rounds: Round[];
   difficulty: 'beginner' | 'intermediate' | 'advanced';
+  /** The session's focus, e.g. "distance control" — framed by the coach's opening (PR-020B). */
+  focus?: string;
+  /** An explicit objective sentence, if authored (falls back to `focus`). */
+  objective?: string;
 }
 
 export enum WorkoutPhase {

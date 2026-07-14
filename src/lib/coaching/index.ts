@@ -27,6 +27,7 @@ export {
 export {
   type CoachConfig,
   type CoachContext,
+  type SessionFacts,
   DEFAULT_COACH_CONFIG,
   makeContext,
 } from './CoachContext';
@@ -34,6 +35,11 @@ export {
 export { ConversationState, type ConversationSnapshot } from './ConversationState';
 export { CoachDirector, classifyCue, type DirectedIntent } from './CoachDirector';
 export { SpeechPlanner, type PlanParams } from './SpeechPlanner';
+export type {
+  SessionIntroduction,
+  SessionGreeting,
+  TimeOfDay,
+} from './SessionIntroduction';
 export { decideSilence, type SilenceDecision } from './SilenceController';
 export { priorityFor, shouldInterrupt, compare } from './PriorityResolver';
 export { CoachActionQueue } from './CoachActionQueue';
