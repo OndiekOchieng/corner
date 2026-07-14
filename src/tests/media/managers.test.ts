@@ -191,6 +191,49 @@ describe('WakeLockManager — screen wake lock lifecycle', () => {
     await wl.reacquireIfWanted();
     expect(wl.getStatus()).toBe('active');
   });
+
+  // --- Acceptance-investigation evidence (PR-025 acceptance) ----------------
+  it('captures request outcome, acquire time and held duration', async () => {
+    let t = 1000;
+    const api = new FakeWakeLock();
+    const wl = new WakeLockManager({ api, now: () => t });
+
+    await wl.acquire('workout-start');
+    let s = wl.stats();
+    expect(s.lastRequestOutcome).toBe('resolved');
+    expect(typeof s.lastRequestMs).toBe('number');
+    expect(s.held).toBe(true);
+    expect(s.acquireTimeMs).toBe(1000);
+
+    t = 1500;
+    expect(wl.stats().heldDurationMs).toBe(500); // 1500 − 1000
+
+    api.last!.emitRelease(); // browser drops it
+    s = wl.stats();
+    expect(s.held).toBe(false);
+    expect(s.lastReleaseReason).toBe('browser-release');
+    expect(s.lastReleaseVisibility).not.toBeNull(); // captured (n/a under Node)
+    expect(s.heldDurationMs).toBeNull(); // no longer held
+  });
+
+  it('captures a rejected request as evidence (Case A: permission/limitation)', async () => {
+    const api = new FakeWakeLock();
+    api.requestShouldReject = true;
+    const wl = new WakeLockManager({ api });
+    expect(await wl.acquire('workout-start')).toBe(false);
+    const s = wl.stats();
+    expect(s.lastRequestOutcome).toBe('rejected');
+    expect(s.lastError).toContain('wake lock denied');
+    expect(s.held).toBe(false);
+  });
+
+  it('records an explicit release reason', async () => {
+    const api = new FakeWakeLock();
+    const wl = new WakeLockManager({ api });
+    await wl.acquire('workout-start');
+    await wl.release('workout-completed');
+    expect(wl.stats().lastReleaseReason).toBe('workout-completed');
+  });
 });
 
 // A stray tick import guard so the helper is referenced even if a test is removed.

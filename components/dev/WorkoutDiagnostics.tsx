@@ -36,6 +36,24 @@ function platformLabel(): string {
 
 const yn = (v: boolean) => (v ? '✓' : '✗');
 
+/** Inferred iOS version from the UA (e.g. "iPhone OS 17_1" → "17.1"); best-effort. */
+function iosVersion(): string {
+  if (typeof navigator === 'undefined') return 'n/a';
+  const m = navigator.userAgent.match(/OS (\d+)[_.](\d+)/);
+  return m ? `${m[1]}.${m[2]}` : '—';
+}
+
+/** Once-off platform facts for the wake-lock investigation (PR-025 acceptance). */
+function platformFacts() {
+  if (typeof window === 'undefined') return { secure: 'n/a', wakeLockApi: 'n/a', vis: 'n/a', focus: 'n/a' };
+  return {
+    secure: String(window.isSecureContext),
+    wakeLockApi: yn('wakeLock' in navigator),
+    vis: typeof document !== 'undefined' ? document.visibilityState : 'n/a',
+    focus: typeof document !== 'undefined' ? String(document.hasFocus()) : 'n/a',
+  };
+}
+
 function Row({ k, v }: { k: string; v: string }) {
   return (
     <div>
@@ -83,7 +101,11 @@ export function WorkoutDiagnostics({ getMediaDiagnostics, getSpeechTrace, workou
       </button>
       {open && (
         <div className="space-y-0.5">
-          <Row k="platform" v={platformLabel()} />
+          <Row k="platform" v={`${platformLabel()} · iOS:${iosVersion()}`} />
+          <Row
+            k="env"
+            v={`secure:${platformFacts().secure} · wakeLock-api:${platformFacts().wakeLockApi} · vis:${platformFacts().vis} · focus:${platformFacts().focus}`}
+          />
           <Row k="workout" v={`${workout.phase}/${workout.status} · ${workout.remainingSeconds}s`} />
           {media ? (
             <>
@@ -103,6 +125,14 @@ export function WorkoutDiagnostics({ getMediaDiagnostics, getSpeechTrace, workou
               <Row
                 k="wakelock"
                 v={`${media.wakeLockStatus} · sup:${yn(media.wakeLockSupported)} held:${yn(media.wakeLockHeld)}`}
+              />
+              <Row
+                k="wl request"
+                v={`${media.wakeLockLastRequestOutcome ?? '—'}${media.wakeLockLastRequestMs != null ? ` in ${media.wakeLockLastRequestMs}ms` : ''}${media.wakeLockLastError ? ` · ${media.wakeLockLastError}` : ''}`}
+              />
+              <Row
+                k="wl held"
+                v={`${media.wakeLockHeldDurationMs != null ? `${media.wakeLockHeldDurationMs}ms` : '—'} · last release: ${media.wakeLockLastReleaseReason ?? '—'}${media.wakeLockLastReleaseVisibility ? ` (vis=${media.wakeLockLastReleaseVisibility})` : ''}`}
               />
               <Row
                 k="wakelock counts"

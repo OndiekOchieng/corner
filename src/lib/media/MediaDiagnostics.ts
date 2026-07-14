@@ -27,6 +27,14 @@ export interface MediaDiagnosticsSnapshot {
   readonly wakeLockAcquired: number;
   readonly wakeLockReleased: number;
   readonly wakeLockReacquired: number;
+  // --- Acceptance investigation evidence (PR-025 acceptance) ----------------
+  readonly wakeLockAcquireTimeMs: number | null;
+  readonly wakeLockHeldDurationMs: number | null;
+  readonly wakeLockLastReleaseReason: string | null;
+  readonly wakeLockLastRequestMs: number | null;
+  readonly wakeLockLastRequestOutcome: 'resolved' | 'rejected' | null;
+  readonly wakeLockLastError: string | null;
+  readonly wakeLockLastReleaseVisibility: string | null;
   readonly capabilities: CapabilitySnapshot;
   readonly resumeCount: number;
   readonly autoplayFailures: number;
@@ -71,6 +79,13 @@ export class MediaDiagnostics {
   private wakeLockAcquired = 0;
   private wakeLockReleased = 0;
   private wakeLockReacquired = 0;
+  private wakeLockAcquireTimeMs: number | null = null;
+  private wakeLockHeldDurationMs: number | null = null;
+  private wakeLockLastReleaseReason: string | null = null;
+  private wakeLockLastRequestMs: number | null = null;
+  private wakeLockLastRequestOutcome: 'resolved' | 'rejected' | null = null;
+  private wakeLockLastError: string | null = null;
+  private wakeLockLastReleaseVisibility: string | null = null;
   private resumeCount = 0;
   private autoplayFailures = 0;
   private visibility: VisibilityState;
@@ -118,6 +133,13 @@ export class MediaDiagnostics {
     this.wakeLockAcquired = stats.acquired;
     this.wakeLockReleased = stats.released;
     this.wakeLockReacquired = stats.reacquired;
+    this.wakeLockAcquireTimeMs = stats.acquireTimeMs;
+    this.wakeLockHeldDurationMs = stats.heldDurationMs;
+    this.wakeLockLastReleaseReason = stats.lastReleaseReason;
+    this.wakeLockLastRequestMs = stats.lastRequestMs;
+    this.wakeLockLastRequestOutcome = stats.lastRequestOutcome;
+    this.wakeLockLastError = stats.lastError;
+    this.wakeLockLastReleaseVisibility = stats.lastReleaseVisibility;
   }
   setVisibility(v: VisibilityState): void {
     this.visibility = v;
@@ -159,6 +181,13 @@ export class MediaDiagnostics {
       wakeLockAcquired: this.wakeLockAcquired,
       wakeLockReleased: this.wakeLockReleased,
       wakeLockReacquired: this.wakeLockReacquired,
+      wakeLockAcquireTimeMs: this.wakeLockAcquireTimeMs,
+      wakeLockHeldDurationMs: this.wakeLockHeldDurationMs,
+      wakeLockLastReleaseReason: this.wakeLockLastReleaseReason,
+      wakeLockLastRequestMs: this.wakeLockLastRequestMs,
+      wakeLockLastRequestOutcome: this.wakeLockLastRequestOutcome,
+      wakeLockLastError: this.wakeLockLastError,
+      wakeLockLastReleaseVisibility: this.wakeLockLastReleaseVisibility,
       capabilities: this.capabilities,
       resumeCount: this.resumeCount,
       autoplayFailures: this.autoplayFailures,
