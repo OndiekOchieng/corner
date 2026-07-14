@@ -41,6 +41,10 @@ export const SEEDED_WORKOUTS: Workout[] = [
           },
           {
             id: 'cue-4',
+            // Semantic combination (PR-020D): each Coach Pack voices [1,2,3] its own
+            // way. `text` is the authoring fallback for older readers.
+            kind: 'combination',
+            combination: [1, 2, 3], // jab · cross · lead hook
             text: 'Push through the finish with jab, cross, hook',
             timeSeconds: 135,
           },
@@ -87,6 +91,8 @@ export const SEEDED_WORKOUTS: Workout[] = [
         coachingCues: [
           {
             id: 'cue-8',
+            kind: 'combination',
+            combination: [1, 2, 3, 6], // jab · cross · lead hook · rear uppercut
             text: 'Combine all techniques: jab, cross, hook, uppercut',
             timeSeconds: 0,
           },

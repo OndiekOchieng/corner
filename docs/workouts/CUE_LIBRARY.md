@@ -144,3 +144,14 @@ Because a cue like "hands back" may be needed many times, **every high-frequency
   teach the numbers naturally (see [BOXING_LEXICON.md](../coaching/BOXING_LEXICON.md)).
   Authored cue *text* is still spoken verbatim; the metadata only enables coach-voiced
   call signs.
+
+### PR-020D — combination cues are now live
+
+The combination metadata described above is wired end-to-end. A cue authored as
+`{ kind: 'combination', combination: [1,2,6], text: 'jab, cross, rear uppercut' }` is
+recognised by the Coach Runtime **by cue id** (no "contains jab" string matching) and
+rendered per Coach Pack via the [Boxing Lexicon](../coaching/BOXING_LEXICON.md) — the
+authored `text` is the fallback, not what most coaches say. See
+[AUTHORING_GUIDE.md](AUTHORING_GUIDE.md) for the per-pack table and
+[WORKOUT_SCHEMA.md](WORKOUT_SCHEMA.md) for the field definitions. Ordinary text cues are
+untouched and still spoken verbatim.

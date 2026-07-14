@@ -83,6 +83,23 @@ function timeOfDayNow(): 'morning' | 'afternoon' | 'evening' | 'neutral' {
 }
 
 /**
+ * Build the cue-id → combination lookup from the workout's authored cues (PR-020D).
+ * Keyed by the same cue id the engine emits on COACH_CUE, so the Coach Runtime can
+ * recognise a combination cue without the engine ever knowing about it.
+ */
+function buildCombinations(workout: Workout): ReadonlyMap<string, readonly number[]> {
+  const map = new Map<string, readonly number[]>();
+  for (const round of workout.rounds) {
+    for (const cue of round.coachingCues ?? []) {
+      if (cue.combination && cue.combination.length > 0) {
+        map.set(cue.id, cue.combination);
+      }
+    }
+  }
+  return map;
+}
+
+/**
  * The live wiring: run the real Execution Engine (Host Runtime), publish its
  * events to the Event Runtime, let the Coach Runtime decide, and let the Media
  * Runtime actually reach the browser — speech, bells, wake lock, visibility.
@@ -128,6 +145,10 @@ export function useCoachedWorkout(
         objective: workout.objective,
         timeOfDay: timeOfDayNow(),
       },
+      // Semantic combination metadata (PR-020D), keyed by cue id — the engine
+      // still schedules cues by id/text exactly as today; the coach looks the
+      // combination up here so it can render it per pack. No Engine change.
+      combinations: buildCombinations(workout),
     });
     const runtime = createHostRuntime(toWorkoutConfig(workout), {
       subscribers: [coach, createMediaRuntimePlugin(media)],

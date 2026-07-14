@@ -16,6 +16,7 @@ import type { PersonalityProfile, ComposedKey } from './personalities';
 import type { SessionGreeting, TimeOfDay } from './SessionIntroduction';
 import { anchorBank, type AnchorKind } from './anchors';
 import { reinforcementBank, encouragementReferenceBank, type Dimension } from './reinforcements';
+import { planCombo } from './BoxingLexicon';
 
 export interface PlanParams {
   roundNumber?: number;
@@ -35,6 +36,8 @@ export interface PlanParams {
   focus?: string;
   objective?: string;
   timeOfDay?: TimeOfDay;
+  /** A boxing combination as punch numbers (PR-020D), rendered per pack via the lexicon. */
+  combination?: readonly number[];
 }
 
 const NUMBER_WORDS = [
@@ -110,6 +113,14 @@ export class SpeechPlanner {
     if (intent === 'instruction' || intent === 'reminder' || intent === 'correction') {
       const text = params.cueText?.trim();
       return text ? text : null;
+    }
+
+    // A semantic combination (PR-020D): the pack renders punch numbers via the
+    // Boxing Lexicon, teaching a call sign before assuming it. Read-only — the
+    // runtime marks the sign introduced at commit time (see CoachRuntime).
+    if (intent === 'combination') {
+      if (!params.combination || params.combination.length === 0) return null;
+      return planCombo(params.combination, this.profile.id, convo).text;
     }
 
     // Layer 2 — a personality-voiced time anchor, rotated for variety.

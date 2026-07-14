@@ -28,6 +28,7 @@ import { priorityFor } from './PriorityResolver';
 import { QueueManager } from './QueueManager';
 import { CoachDiagnostics, type CoachDiagnosticsSnapshot } from './CoachDiagnostics';
 import { personalityFor, type PersonalityProfile } from './personalities';
+import { nextUntaughtSign, callSign } from './BoxingLexicon';
 
 export class CoachRuntime {
   private readonly convo: CoachingMemory;
@@ -122,6 +123,13 @@ export class CoachRuntime {
     // (e.g. teaching after the rest intro) see it and space themselves. The
     // dimension is recorded so the next same-dimension cue reinforces (varies).
     this.convo.noteSpoken(candidate.intent, text, event.elapsedMs, candidate.params.dimension);
+    // Teach-before-shorthand (PR-020D): mark the call sign introduced ONLY now
+    // that the combination line is committed to be spoken — a combo silenced by
+    // the density gate above never falsely counts as taught.
+    if (candidate.intent === 'combination' && candidate.params.combination) {
+      const sign = nextUntaughtSign(candidate.params.combination, this.profile.id, this.convo);
+      if (sign != null) this.convo.noteCallSignIntroduced(callSign(sign));
+    }
     this.diagnostics.recordGenerated();
 
     const discarded = this.queue.enqueue(action);

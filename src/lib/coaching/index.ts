@@ -80,6 +80,8 @@ export {
   usesCallSigns,
   renderCombo,
   renderComboTaught,
+  planCombo,
+  nextUntaughtSign,
   teachCallSign,
   type PunchNumber,
   type VocabularyLevel,

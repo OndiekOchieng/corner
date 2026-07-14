@@ -160,3 +160,35 @@ A workout is invalid if any of these fail:
 10. No recommended **coach pack**, or a pack that clashes with the workout's character.
 
 Passing validation is necessary but not sufficient — the workout must also pass `QUALITY_CHECKLIST.md` (the felt-quality review).
+
+---
+
+## Amendment — PR-020D: semantic cue metadata
+
+A cue may now carry **semantic metadata** so the Coach Runtime receives structured
+intent instead of parsing strings. Both fields are optional and additive — a cue with
+neither behaves exactly as before.
+
+```ts
+interface CoachingCue {
+  id: string;
+  text: string;            // still required; the authoring fallback, spoken when no kind applies
+  timeSeconds?: number;
+  timing?: 'start' | 'middle' | 'end';
+  kind?: 'instruction' | 'combination' | 'movement' | 'defence'
+       | 'conditioning' | 'breathing' | 'mindset' | 'ringIQ';
+  combination?: number[]; // punch numbers, e.g. [1, 2, 6] = jab · cross · rear uppercut
+}
+```
+
+- **`combination`** — when present, the coach renders the punch numbers per Coach Pack
+  via the [Boxing Lexicon](../coaching/BOXING_LEXICON.md) instead of speaking `text`
+  verbatim. The same cue becomes "Jab. Cross. Rear uppercut." (Technical) or
+  "One-two-six!" (Fight Night). Not limited to six — the lexicon degrades gracefully.
+- **`kind`** — the cue's semantic category. Only `combination` changes runtime behaviour
+  today; the others are forward-looking metadata.
+- **Backwards compatible.** Existing workouts need no migration; plain text cues remain
+  valid and are spoken verbatim.
+- **The Engine is unaware.** Combination metadata never reaches the engine event — the
+  composition passes it to the Coach Runtime by cue id. Authors define WHAT; Coach Packs
+  define HOW; the Engine still schedules cues exactly as before.

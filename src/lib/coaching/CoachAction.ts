@@ -31,6 +31,7 @@ export type CoachIntent =
   | 'round_intro'
   | 'time_anchor'
   | 'instruction'
+  | 'combination'
   | 'reminder'
   | 'correction'
   | 'reinforcement'
@@ -61,6 +62,7 @@ export const INTENT_PRIORITY: Readonly<Record<CoachIntent, number>> = {
   urgency: 60,
   correction: 52,
   reinforcement: 46,
+  combination: 45,
   instruction: 44,
   reminder: 40,
   teaching: 34,

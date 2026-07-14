@@ -64,6 +64,13 @@ export interface CoachContext {
   readonly workoutName?: string;
   /** Session-introduction facts owned by the workout. */
   readonly facts: SessionFacts;
+  /**
+   * Semantic combination metadata (PR-020D), keyed by the authored cue id the
+   * engine emits on COACH_CUE. Lets the Director recognise a combination cue and
+   * render it per pack — no string parsing, no Engine change. Absent ⇒ the cue is
+   * a plain instruction.
+   */
+  readonly combinations: ReadonlyMap<string, readonly number[]>;
   readonly config: CoachConfig;
 }
 
@@ -72,6 +79,7 @@ export function makeContext(
   options: {
     workoutName?: string;
     facts?: SessionFacts;
+    combinations?: ReadonlyMap<string, readonly number[]>;
     config?: Partial<CoachConfig>;
   } = {},
 ): CoachContext {
@@ -79,6 +87,7 @@ export function makeContext(
     personality,
     workoutName: options.workoutName,
     facts: options.facts ?? {},
+    combinations: options.combinations ?? new Map(),
     config: { ...DEFAULT_COACH_CONFIG, ...options.config },
   };
 }

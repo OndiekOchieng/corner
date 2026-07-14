@@ -1,8 +1,32 @@
+/**
+ * Semantic cue kinds (PR-020D). Optional metadata that lets the Coach Runtime
+ * receive structured intent instead of parsing strings. Additive — a cue with no
+ * `kind` is treated as a plain instruction, exactly as before.
+ */
+export type CueKind =
+  | 'instruction'
+  | 'combination'
+  | 'movement'
+  | 'defence'
+  | 'conditioning'
+  | 'breathing'
+  | 'mindset'
+  | 'ringIQ';
+
 export interface CoachingCue {
   id: string;
   text: string;
   timeSeconds?: number;
   timing?: 'start' | 'middle' | 'end';
+  /** Semantic kind (PR-020D). Absent ⇒ plain instruction (backwards compatible). */
+  kind?: CueKind;
+  /**
+   * A boxing combination as punch numbers (1 jab · 2 cross · 3 lead hook · 4 rear
+   * hook · 5 lead uppercut · 6 rear uppercut). When present, the Coach Runtime
+   * renders it per Coach Pack via the Boxing Lexicon instead of speaking `text`
+   * verbatim. Not limited to six — the lexicon degrades gracefully.
+   */
+  combination?: number[];
 }
 
 // Alias for backwards compatibility

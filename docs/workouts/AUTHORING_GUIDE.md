@@ -124,3 +124,41 @@ This is exactly what Corner is *not*. If a workout could be any workout, it isn'
 ## 9. The author's oath
 
 > Every workout has one clear objective, an arc that builds, rounds that relate, cues that are timely and sparse, rest that recovers and teaches, and a close that means something. If I read it aloud in real time and it feels like *coaching*, it's ready. If it feels like a *timer with talking*, it isn't.
+
+---
+
+## Amendment — PR-020D: authoring combinations once, for every coach
+
+Stop writing a combination as prose that only one coach voices well. Author it
+**semantically** and every Coach Pack expresses it in its own language — no per-coach
+duplication.
+
+```ts
+// Before — locked to one phrasing:
+{ id: 'cue-4', text: 'Jab, cross, rear uppercut', timeSeconds: 135 }
+
+// After — intent, rendered per pack:
+{ id: 'cue-4', kind: 'combination', combination: [1, 2, 6],
+  text: 'Jab, cross, rear uppercut', timeSeconds: 135 }
+```
+
+The same cue now becomes:
+
+| Coach | Says |
+|---|---|
+| Technical | Jab. Cross. Rear uppercut. |
+| Fight Night | One-two-six! |
+| Competition | Six. Again. |
+| Calm | Let's finish with the rear uppercut. |
+| Southpaw | Lead hand. Rear hand. Rear uppercut. |
+
+Guidance:
+- Use `combination` for **punch sequences**; keep ordinary instructional cues as plain
+  text (movement, breathing, mindset reminders don't need it).
+- Keep the `text` field as a readable fallback — it is spoken by anything that doesn't
+  understand `combination`, and documents the author's intent.
+- Numbers: 1 jab · 2 cross · 3 lead hook · 4 rear hook · 5 lead uppercut · 6 rear
+  uppercut (see [BOXING_LEXICON.md](../coaching/BOXING_LEXICON.md)). The coach teaches a
+  call sign before assuming it, so you never have to explain the numbers yourself.
+- **You never duplicate a workout per coach.** The workout defines *what* to throw; the
+  Coach Pack defines *how* to call it.

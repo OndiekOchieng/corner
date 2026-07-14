@@ -87,6 +87,13 @@ export class CoachDirector {
         convo.setEnergy('steady');
         const roundNumber = event.data.roundIndex + 1;
 
+        // Semantic combination cue (PR-020D) — recognised by the authored cue id,
+        // not by parsing the text. The pack renders it via the Boxing Lexicon.
+        const combination = this.context.combinations.get(event.data.cueId);
+        if (combination && combination.length > 0) {
+          return [{ intent: 'combination', params: { combination, roundNumber } }];
+        }
+
         // Layer 2 — an authored (or injected) time anchor.
         const anchorKind = parseAnchorKind(event.data.cueId);
         if (anchorKind) {

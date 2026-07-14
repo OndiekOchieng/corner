@@ -42,11 +42,13 @@ const CALL_SIGN_WORDS: Readonly<Record<PunchNumber, string>> = {
   6: 'six',
 };
 
-export function callSign(n: PunchNumber): string {
-  return CALL_SIGN_WORDS[n];
+// Widened to `number` so the lexicon can grow past six punches without changing
+// call sites (unknown numbers degrade gracefully rather than throwing).
+export function callSign(n: number): string {
+  return CALL_SIGN_WORDS[n as PunchNumber] ?? String(n);
 }
-export function punchName(n: PunchNumber): string {
-  return PUNCHES[n].name;
+export function punchName(n: number): string {
+  return PUNCHES[n as PunchNumber]?.name ?? `punch ${n}`;
 }
 
 /**
@@ -87,12 +89,14 @@ export function usesCallSigns(packId: CoachPackId): boolean {
 
 const cap = (s: string): string => s.charAt(0).toUpperCase() + s.slice(1);
 
-function nameFor(n: PunchNumber, vocab: PackVocabulary): string {
-  return vocab.usesHandNames ? PUNCHES[n].handName : PUNCHES[n].name;
+function nameFor(n: number, vocab: PackVocabulary): string {
+  const p = PUNCHES[n as PunchNumber];
+  if (!p) return `punch ${n}`;
+  return vocab.usesHandNames ? p.handName : p.name;
 }
 
 /** Render a combination as a given pack would say it. Pure + deterministic. */
-export function renderCombo(numbers: readonly PunchNumber[], packId: CoachPackId): string {
+export function renderCombo(numbers: readonly number[], packId: CoachPackId): string {
   const vocab = PACK_VOCABULARY[packId];
   if (numbers.length === 0) return '';
 
@@ -123,7 +127,7 @@ export function renderCombo(numbers: readonly PunchNumber[], packId: CoachPackId
 }
 
 /** The natural teaching line for a call sign — "Every time I say one, I mean the jab." */
-export function teachCallSign(n: PunchNumber): string {
+export function teachCallSign(n: number): string {
   return `Every time I say ${callSign(n)}, I mean the ${punchName(n).toLowerCase()}.`;
 }
 
@@ -146,18 +150,48 @@ export interface ComboRender {
  * it uses the shorthand. Name-based packs never need to teach. The athlete learns
  * boxing language simply by training (VOCABULARY teaching, §6).
  */
+/**
+ * The next punch whose call sign this pack still needs to teach (or null — a
+ * name-based pack, or every sign already introduced). Read-only.
+ */
+export function nextUntaughtSign(
+  numbers: readonly number[],
+  packId: CoachPackId,
+  memory: Pick<CallSignMemory, 'hasIntroducedCallSign'>,
+): number | null {
+  if (!usesCallSigns(packId)) return null;
+  return numbers.find((n) => !memory.hasIntroducedCallSign(callSign(n))) ?? null;
+}
+
+/**
+ * Decide what to say WITHOUT mutating memory — teach the next unseen sign, else
+ * render the shorthand. The runtime marks the sign introduced at COMMIT time (when
+ * the line is actually spoken), so a combo silenced by the density gate is not
+ * wrongly recorded as taught.
+ */
+export function planCombo(
+  numbers: readonly number[],
+  packId: CoachPackId,
+  memory: Pick<CallSignMemory, 'hasIntroducedCallSign'>,
+): ComboRender {
+  const sign = nextUntaughtSign(numbers, packId, memory);
+  if (sign != null) return { text: teachCallSign(sign), taughtSign: callSign(sign) };
+  return { text: renderCombo(numbers, packId) };
+}
+
+/**
+ * Plan a combo AND mark the taught sign in memory (teach-then-shorthand). Used
+ * standalone (and in tests); the live runtime uses planCombo + a commit-time mark.
+ */
 export function renderComboTaught(
-  numbers: readonly PunchNumber[],
+  numbers: readonly number[],
   packId: CoachPackId,
   memory: CallSignMemory,
 ): ComboRender {
-  if (!usesCallSigns(packId)) {
-    return { text: renderCombo(numbers, packId) };
+  const r = planCombo(numbers, packId, memory);
+  if (r.taughtSign != null) {
+    const sign = nextUntaughtSign(numbers, packId, memory);
+    if (sign != null) memory.noteCallSignIntroduced(callSign(sign));
   }
-  const firstNew = numbers.find((n) => !memory.hasIntroducedCallSign(callSign(n)));
-  if (firstNew != null) {
-    memory.noteCallSignIntroduced(callSign(firstNew));
-    return { text: teachCallSign(firstNew), taughtSign: callSign(firstNew) };
-  }
-  return { text: renderCombo(numbers, packId) };
+  return r;
 }

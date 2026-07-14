@@ -79,10 +79,24 @@ their words are self-explanatory.
   calls; it never rewrites an authored `instruction`/`reminder`/`correction` cue (those
   are still spoken exactly as the Cue Library wrote them).
 
-## Wiring status
+## Wiring (shipped in PR-020D)
 
-Shipped as a tested capability with per-pack rendering and memory-gated teaching. To
-drive it from the live event stream, authored combo cues gain optional punch-number
-metadata (`[1,2,6]`) that the Director hands to `renderComboTaught()` — a small,
-additive follow-up in `CUE_LIBRARY.md`. Until then the lexicon backs coach-generated
-calls and is fully unit-tested (`src/tests/coaching/memory.test.ts`).
+The lexicon is now driven from the live event stream. Authored cues carry optional
+`combination` metadata (`[1, 2, 6]`); the composition builds a `cueId → combination`
+map and passes it on `CoachContext`; the Director recognises a combination cue **by id**
+(no string parsing) and emits a `combination` intent; the SpeechPlanner renders it with
+`planCombo()`, and the runtime marks a taught call sign at *commit* time (so a combo
+silenced by the density gate is never wrongly recorded as taught).
+
+```
+Cue { kind: 'combination', combination: [1,2,6] }
+  → toWorkoutConfig drops it; the Engine still schedules the cue by id/text (unchanged)
+  → composition: buildCombinations(workout) → CoachContext.combinations
+  → CoachDirector.onEvent(COACH_CUE): combinations.get(cueId) → { intent: 'combination' }
+  → SpeechPlanner.plan('combination') → planCombo(numbers, pack, memory)
+  → CoachRuntime commits → marks the taught call sign
+```
+
+No Engine, Host, Event, Media, or Session change — the combination rides on
+Coach-Runtime config, never on the engine event. Tested in
+`src/tests/coaching/combinations.test.ts` and `memory.test.ts`.

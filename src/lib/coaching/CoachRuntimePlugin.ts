@@ -27,6 +27,8 @@ export interface CoachRuntimePluginOptions {
   readonly workoutName?: string;
   /** Session-introduction facts owned by the workout (PR-020B). */
   readonly facts?: SessionFacts;
+  /** Semantic combination metadata keyed by cue id (PR-020D). */
+  readonly combinations?: ReadonlyMap<string, readonly number[]>;
   readonly config?: Partial<CoachConfig>;
   readonly priority?: number;
 }
@@ -60,6 +62,7 @@ export function createCoachRuntimePlugin(options: CoachRuntimePluginOptions): Co
   const context = makeContext(options.personality, {
     workoutName: options.workoutName,
     facts: options.facts,
+    combinations: options.combinations,
     config: options.config,
   });
   const runtime = new CoachRuntime(context, options.sink);
