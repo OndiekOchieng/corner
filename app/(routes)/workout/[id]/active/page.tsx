@@ -72,7 +72,7 @@ function ActiveRunner({ workout }: { workout: Workout }) {
     ],
   );
 
-  const { snapshot, isSupported, pause, resume, quit, getSessionId, getMediaDiagnostics, getSpeechTrace } =
+  const { snapshot, isSupported, isPreparing, pause, resume, quit, getSessionId, getMediaDiagnostics, getSpeechTrace } =
     useCoachedWorkout(workout, settings);
 
   // When the engine finishes, let the closing bell + coach line land, then move
@@ -98,6 +98,23 @@ function ActiveRunner({ workout }: { workout: Workout }) {
     quit();
     router.push('/');
   };
+
+  // PR-031 — Grace period: room to arrive. No timer, no countdown, no coaching —
+  // just presence, until the opening bell rings and boxing begins. The Leave guard
+  // stays active so the athlete can still step out.
+  if (isPreparing) {
+    return (
+      <main className="screen flex flex-col items-center justify-center gap-4 text-center">
+        <LeaveWorkoutGuard active onEndWorkout={handleQuit} />
+        <p className="eyebrow text-muted-foreground">Get ready</p>
+        <h1 className="text-4xl font-bold tracking-tight text-balance">{workout.name}</h1>
+        <p className="max-w-xs text-balance text-muted-foreground">
+          Put your phone down. Wear your gloves. Take your stance.
+        </p>
+        <p className="text-sm text-muted-foreground/70">The bell starts your first round.</p>
+      </main>
+    );
+  }
 
   if (snapshot.phase === 'finished') {
     return (

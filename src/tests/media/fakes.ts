@@ -7,8 +7,9 @@
 
 import type {
   AudioContextLike,
-  OscillatorLike,
-  GainNodeLike,
+  AudioBufferLike,
+  AudioBufferSourceLike,
+  BellAssetLoader,
   SpeechEngine,
   WakeLockApiLike,
   WakeLockSentinelLike,
@@ -16,26 +17,23 @@ import type {
   GestureTargetLike,
 } from '../../lib/media';
 
-export class FakeOscillator implements OscillatorLike {
-  frequency = { value: 0 };
-  type = '';
-  started = false;
-  stopped = false;
+export class FakeBufferSource implements AudioBufferSourceLike {
+  buffer: AudioBufferLike | null = null;
+  startedAt: number | null = null;
   connect(): void {}
-  start(): void { this.started = true; }
-  stop(): void { this.stopped = true; }
+  start(when = 0): void { this.startedAt = when; }
 }
 
-export class FakeGain implements GainNodeLike {
-  gain = { setValueAtTime(): void {}, exponentialRampToValueAtTime(): void {} };
-  connect(): void {}
-}
+/** A tiny fake bell asset loader — resolves instantly with an empty buffer. */
+export const fakeBellLoader: BellAssetLoader = async () => new ArrayBuffer(8);
 
 export class FakeAudioContext implements AudioContextLike {
   state: 'suspended' | 'running' | 'closed' = 'suspended';
   currentTime = 0;
   destination = {};
-  readonly oscillators: FakeOscillator[] = [];
+  /** Every bell strike dispatched to the browser (one FakeBufferSource per strike). */
+  readonly bufferSources: FakeBufferSource[] = [];
+  decodeCalls = 0;
   resumeCalls = 0;
   suspendCalls = 0;
   closeCalls = 0;
@@ -57,13 +55,14 @@ export class FakeAudioContext implements AudioContextLike {
     this.closeCalls += 1;
     this.state = 'closed';
   }
-  createOscillator(): FakeOscillator {
-    const osc = new FakeOscillator();
-    this.oscillators.push(osc);
-    return osc;
+  async decodeAudioData(): Promise<AudioBufferLike> {
+    this.decodeCalls += 1;
+    return { duration: 1.2 };
   }
-  createGain(): FakeGain {
-    return new FakeGain();
+  createBufferSource(): FakeBufferSource {
+    const src = new FakeBufferSource();
+    this.bufferSources.push(src);
+    return src;
   }
 }
 

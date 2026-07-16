@@ -10,6 +10,7 @@ import {
   FakeAudioContext,
   FakeSpeechEngine,
   FakeWakeLock,
+  fakeBellLoader,
   tick,
 } from './fakes';
 
@@ -52,7 +53,7 @@ describe('CapabilityService — feature detection', () => {
 describe('AudioManager — AudioContext ownership & autoplay', () => {
   it('unlocks a suspended context from a gesture', async () => {
     const ctx = new FakeAudioContext();
-    const audio = new AudioManager({ createContext: () => ctx });
+    const audio = new AudioManager({ createContext: () => ctx, loadBellAsset: fakeBellLoader });
     expect(audio.isUnlocked()).toBe(false);
     const ok = await audio.unlock();
     expect(ok).toBe(true);
@@ -73,12 +74,23 @@ describe('AudioManager — AudioContext ownership & autoplay', () => {
 
   it('only makes sound while running (respects the lock)', async () => {
     const ctx = new FakeAudioContext();
-    const audio = new AudioManager({ createContext: () => ctx });
-    audio.playBell('round-start'); // still suspended
-    expect(ctx.oscillators).toHaveLength(0);
+    const audio = new AudioManager({ createContext: () => ctx, loadBellAsset: fakeBellLoader });
+    audio.playBell('round-start'); // still suspended ⇒ silent
+    expect(ctx.bufferSources).toHaveLength(0);
     await audio.unlock();
-    audio.playBell('round-start'); // two-beep bell
-    expect(ctx.oscillators).toHaveLength(2);
+    audio.playBell('round-start'); // begin = one strike
+    expect(ctx.bufferSources).toHaveLength(1);
+  });
+
+  it('rings the one bell as ding-ding-ding on completion (begin=1, finish=3)', async () => {
+    const ctx = new FakeAudioContext();
+    const audio = new AudioManager({ createContext: () => ctx, loadBellAsset: fakeBellLoader });
+    await audio.unlock();
+    expect(ctx.decodeCalls).toBe(1); // the single asset is decoded once
+    audio.playBell('rest-start'); // begin/round-end = one strike
+    expect(ctx.bufferSources).toHaveLength(1);
+    audio.playBell('finish'); // the final bell = three strikes
+    expect(ctx.bufferSources).toHaveLength(4);
   });
 
   it('is a silent no-op when Web Audio is unsupported', async () => {

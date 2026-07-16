@@ -10,6 +10,7 @@ import {
   FakeWakeLock,
   FakeVisibility,
   FakeGestureTarget,
+  fakeBellLoader,
   tick,
 } from './fakes';
 
@@ -26,6 +27,7 @@ function build(overrides: Partial<MediaRuntimeDeps> = {}) {
     wakeLockApi: wakeLock,
     visibility,
     gestureTarget: gesture,
+    bellAssetLoader: fakeBellLoader,
     ...overrides,
   });
   return { media, ctx, engine, wakeLock, visibility, gesture };
@@ -48,8 +50,8 @@ describe('MediaRuntime — lifecycle, bells, wake lock', () => {
   it('rings bells on transitions once unlocked', async () => {
     const { media, ctx } = build();
     await media.unlock();
-    media.onEvent(ROUND); // two-beep round bell
-    expect(ctx.oscillators).toHaveLength(2);
+    media.onEvent(ROUND); // begin = a single strike of the one bell
+    expect(ctx.bufferSources).toHaveLength(1);
   });
 
   it('respects the bells-enabled toggle', async () => {
@@ -57,7 +59,7 @@ describe('MediaRuntime — lifecycle, bells, wake lock', () => {
     await media.unlock();
     media.setBellsEnabled(false);
     media.onEvent(ROUND);
-    expect(ctx.oscillators).toHaveLength(0);
+    expect(ctx.bufferSources).toHaveLength(0);
   });
 
   it('rings the finish bell and releases the wake lock on completion', async () => {
@@ -67,7 +69,7 @@ describe('MediaRuntime — lifecycle, bells, wake lock', () => {
     await tick();
     media.onEvent(COMPLETED);
     await tick();
-    expect(ctx.oscillators.length).toBeGreaterThanOrEqual(3); // finish = 3 tones
+    expect(ctx.bufferSources.length).toBeGreaterThanOrEqual(3); // finish = ding-ding-ding
     expect(wakeLock.last?.released).toBe(true);
     expect(media.diagnostics().wakeLockStatus).toBe('released');
   });
@@ -183,7 +185,7 @@ describe('MediaRuntimePlugin — the athlete hears a full workout', () => {
 
     expect(engine.spoken[0]).toContain('Test Bout'); // coach spoke
     expect(engine.spoken.join(' ')).not.toContain('Ten seconds.'); // PR-030 — no counting
-    expect(ctx.oscillators.length).toBeGreaterThan(0); // the BELL marks the transition, not "10… 5…"
+    expect(ctx.bufferSources.length).toBeGreaterThan(0); // the BELL marks the transition, not "10… 5…"
     expect(wakeLock.requests).toBeGreaterThanOrEqual(1); // screen kept awake
     expect(wakeLock.last?.released).toBe(true); // released at the end
   });

@@ -33,6 +33,8 @@ export interface CoachedWorkoutSettings {
 export interface UseCoachedWorkoutReturn {
   snapshot: WorkoutSnapshot;
   isSupported: boolean;
+  /** True during the pre-workout grace period (PR-031) — before the opening bell. */
+  isPreparing: boolean;
   pause: () => void;
   resume: () => void;
   quit: () => void;
@@ -45,6 +47,14 @@ export interface UseCoachedWorkoutReturn {
 }
 
 type Controller = HostRuntime['controller'];
+
+/**
+ * PR-031 — Grace period. After START, the athlete gets room to put the phone down,
+ * wear their gloves, take their stance, and become present. Nothing is timed and
+ * nothing is spoken; the Engine is started only when this ends, so its first truth
+ * is still the opening bell of round one — it never learns the grace existed.
+ */
+const GRACE_PERIOD_MS = 15000;
 
 /** Idle snapshot used before the runtime exists (SSR / first paint). */
 const IDLE_SNAPSHOT: WorkoutSnapshot = {
@@ -122,6 +132,8 @@ export function useCoachedWorkout(
 
   const [controller, setController] = useState<Controller | null>(null);
   const [isSupported, setIsSupported] = useState(false);
+  /** True during the grace period — before the opening bell and engine t=0 (PR-031). */
+  const [isPreparing, setIsPreparing] = useState(true);
 
   // Build the whole runtime on the client, once per workout. Construction lives
   // inside the effect so a StrictMode remount rebuilds cleanly.
@@ -184,15 +196,23 @@ export function useCoachedWorkout(
     setController(runtime.controller);
     setIsSupported(media.capabilities().speech);
 
-    // Start the engine IMMEDIATELY — never gate the workout on audio unlock. On
-    // iOS the AudioContext.resume() promise can stay pending until a user gesture,
-    // so awaiting it here left the timer stuck at 00:00. Unlock audio best-effort
-    // in parallel; the Media Runtime re-attempts unlock on WORKOUT_STARTED and
-    // arms a one-shot gesture fallback, so the coach is heard as soon as possible.
-    runtime.controller.start();
+    // Unlock audio NOW (best-effort) so the opening bell — rung by the Engine at
+    // t=0 — is audible when the grace period ends. Unlocking is never awaited; on
+    // iOS AudioContext.resume() can stay pending until a gesture, and the Media
+    // Runtime arms a one-shot gesture fallback + re-attempts on WORKOUT_STARTED.
     void media.unlock();
+    setIsPreparing(true);
+
+    // PR-031 — Grace period: 15 s of silence to arrive, then the Engine starts and
+    // its first event (ROUND_STARTED) rings the opening bell. The Engine is never
+    // told the grace happened; from its side, the bell rang and t=0 began.
+    const graceTimer = window.setTimeout(() => {
+      setIsPreparing(false);
+      runtime.controller.start();
+    }, GRACE_PERIOD_MS);
 
     return () => {
+      window.clearTimeout(graceTimer);
       runtime.dispose();
       media.dispose();
       runtimeRef.current = null;
@@ -241,6 +261,7 @@ export function useCoachedWorkout(
   return {
     snapshot,
     isSupported,
+    isPreparing,
     pause,
     resume,
     quit,

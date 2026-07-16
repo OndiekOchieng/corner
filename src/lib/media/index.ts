@@ -28,8 +28,9 @@ export {
   type AudioManagerOptions,
   type AudioContextLike,
   type AudioContextFactory,
-  type OscillatorLike,
-  type GainNodeLike,
+  type AudioBufferLike,
+  type AudioBufferSourceLike,
+  type BellAssetLoader,
   type BellKind,
 } from './AudioManager';
 

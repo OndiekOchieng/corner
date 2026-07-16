@@ -16,7 +16,13 @@ import type { WorkoutEvent } from '../engine';
 import type { SpeechSink } from '../coaching';
 import { SpeechService } from '@/lib/speech/SpeechService';
 import { CapabilityService, resolveCapabilityEnv, type CapabilityEnv, type CapabilitySnapshot } from './CapabilityService';
-import { AudioManager, type AudioContextFactory, type AudioContextLike, type BellKind } from './AudioManager';
+import {
+  AudioManager,
+  type AudioContextFactory,
+  type AudioContextLike,
+  type BellKind,
+  type BellAssetLoader,
+} from './AudioManager';
 import {
   SpeechManager,
   type SpeechEngine,
@@ -56,6 +62,8 @@ export interface MediaRuntimeDeps {
   readonly wakeLockApi?: WakeLockApiLike | null;
   readonly visibility?: VisibilityLike | null;
   readonly gestureTarget?: GestureTargetLike | null;
+  /** Injected bell-asset loader (default `fetch`); lets the runtime run headless. */
+  readonly bellAssetLoader?: BellAssetLoader;
 }
 
 const GESTURE_EVENTS = ['pointerdown', 'keydown', 'touchstart'] as const;
@@ -100,6 +108,7 @@ export class MediaRuntime {
       createContext: audioFactory,
       onResume: () => this.diag.recordResume(),
       onAutoplayFailure: () => this.diag.recordAutoplayFailure(),
+      loadBellAsset: deps.bellAssetLoader,
     });
 
     this.wakeLock = new WakeLockManager({
