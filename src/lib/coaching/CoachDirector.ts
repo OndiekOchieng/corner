@@ -71,6 +71,12 @@ export class CoachDirector {
         convo.enterRound(event.data.roundNumber);
         // Record when this round ends so coaching respects the countdown (PR-021).
         convo.setRoundEnd(event.elapsedMs + event.data.durationMs);
+        // PR-030 — the BELL announces the round; the coach does not number the FIRST
+        // one. The opening intro already greeted the athlete, so round one is:
+        // intro → (room) → DING → box — presence, not a second announcement (the
+        // bell owns transitions). Later rounds keep a brief intro for orientation and
+        // final-round framing, which a single bell can't convey.
+        if (event.data.roundNumber <= 1) return [];
         const roundName = event.data.round.name ?? `Round ${event.data.roundNumber}`;
         return [
           {
@@ -151,13 +157,13 @@ export class CoachDirector {
       }
 
       case 'COUNTDOWN_SECOND':
-        convo.setEnergy('peak');
-        return [
-          {
-            intent: 'countdown',
-            params: { secondsRemaining: event.data.secondsRemaining },
-          },
-        ];
+        // PR-030 — the coach no longer counts. "Ten… five… four…" is a software-ism:
+        // it announces that a machine is timing the athlete. The engine's countdown
+        // markers stay exactly as intelligent as today (the coach still uses them to
+        // avoid STARTING a line the boundary would cut — PR-021 preemption), but the
+        // numbers are never spoken. Silence holds the air; the BELL marks the
+        // transition. Software counts; a gym rings.
+        return [];
 
       case 'WORKOUT_COMPLETED':
         convo.setEnergy('low');

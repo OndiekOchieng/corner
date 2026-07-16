@@ -182,8 +182,8 @@ describe('MediaRuntimePlugin — the athlete hears a full workout', () => {
     await tick();
 
     expect(engine.spoken[0]).toContain('Test Bout'); // coach spoke
-    expect(engine.spoken.join(' ')).toContain('Ten seconds.'); // countdown heard
-    expect(ctx.oscillators.length).toBeGreaterThan(0); // bells rang
+    expect(engine.spoken.join(' ')).not.toContain('Ten seconds.'); // PR-030 — no counting
+    expect(ctx.oscillators.length).toBeGreaterThan(0); // the BELL marks the transition, not "10… 5…"
     expect(wakeLock.requests).toBeGreaterThanOrEqual(1); // screen kept awake
     expect(wakeLock.last?.released).toBe(true); // released at the end
   });

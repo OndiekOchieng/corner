@@ -58,7 +58,10 @@ describe('live wiring — the app path, coached', () => {
   it('a real athlete would hear a coached session end-to-end', () => {
     const { workout, sink } = runWorkout('fightnight');
     expect(sink.spoken[0]).toContain(workout.name); // workout intro
-    expect(sink.spoken.join(' \n ')).toContain('Ten seconds.'); // countdown
+    // PR-030 — the coach never counts ("10… 5…" is a software-ism); the bell marks
+    // the boundary. The session is still fully coached between the bells.
+    expect(sink.spoken.join(' \n ')).not.toContain('Ten seconds.');
+    expect(sink.spoken.length).toBeGreaterThan(2); // coached across the arc
     expect(sink.spoken.at(-1)).toMatch(/round|respect|dug/i); // honest close
   });
 

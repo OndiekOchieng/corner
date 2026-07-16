@@ -26,14 +26,14 @@ function session(opts: { resumeAtMs?: number; cueAfterResumeAt?: number } = {}) 
 }
 
 describe('Temporal consistency (PR-021)', () => {
-  it('the Session Introduction never announces or duplicates Round 1', () => {
+  it('the coach never announces round one — the BELL owns that transition (PR-030)', () => {
     const spoken = session().spoken;
     // The opening line is the intro; it must not announce the round.
     expect(spoken[0].toLowerCase()).not.toMatch(/round\s*(one|1)\b/);
-    // Exactly one line announces "Round 1" — the Round Introduction.
+    // No coach line announces round one at all — presence, not a second announcement.
+    // The round-start bell (Media Runtime) is what says "we're boxing now".
     const roundAnnouncements = spoken.filter((l) => /round\s*(one|1)\b/i.test(l));
-    expect(roundAnnouncements).toHaveLength(1);
-    expect(roundAnnouncements[0].toLowerCase()).toContain('round 1');
+    expect(roundAnnouncements).toHaveLength(0);
   });
 
   it('resume never replays the introduction (5 s / 45 s / 90 s)', () => {

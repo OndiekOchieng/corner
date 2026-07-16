@@ -99,6 +99,10 @@ export class SpeechPlanner {
     convo: CoachingMemory,
     attempt = 0,
   ): string | null {
+    // The countdown renderer is retained as capability (priority, interrupt, and
+    // preemption machinery still classify it), but PR-030 stopped the Director from
+    // triggering spoken countdowns — the coach no longer counts. Software counts; a
+    // gym rings. See CoachDirector.COUNTDOWN_SECOND.
     if (intent === 'countdown') {
       const s = params.secondsRemaining;
       return s == null ? null : countdownText(s);

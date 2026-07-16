@@ -16,11 +16,15 @@ describe('CoachRuntime — a full workout feels coached', () => {
     expect(sink.spoken[0]).toContain('Orthodox Power');
   });
 
-  it('coaches the whole arc: intro, rounds, countdown, rest, finish', () => {
+  it('coaches the whole arc: intro, rounds, rest, finish — and never counts (PR-030)', () => {
     const { sink } = run('technical');
     const all = sink.spoken.join(' \n ');
-    expect(all).toContain('Ten seconds.'); // countdown lands
-    expect(all).toMatch(/Round 1/); // round intro
+    // The coach no longer narrates numbers — the bell marks the boundary, not "10… 5…".
+    expect(all).not.toContain('Ten seconds.');
+    expect(all).not.toMatch(/\b(Five|Four|Three|Two|One)\.\s/);
+    // The bell announces round one; the coach numbers only the LATER rounds.
+    expect(all).not.toMatch(/Round 1\b/);
+    expect(all).toMatch(/Round [23]|Final round/i); // later rounds still oriented
     expect(all).toMatch(/Rest\b|Recover/); // rest coaching
     expect(sink.spoken.at(-1)).toMatch(/round|well|trained|respect/i); // honest close
   });
