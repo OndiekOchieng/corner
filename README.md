@@ -1,4 +1,4 @@
-# 🥊 Corner
+# Corner
 
 > **Press Start.**
 > **Put the phone down.**
