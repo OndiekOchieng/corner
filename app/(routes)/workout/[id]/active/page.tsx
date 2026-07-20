@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import { Play } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { WorkoutScreen } from '@/components/Workout/WorkoutScreen';
 import { LeaveWorkoutGuard } from '@/components/Workout/LeaveWorkoutGuard';
 import { WorkoutDiagnostics } from '@/components/dev/WorkoutDiagnostics';
@@ -116,16 +118,17 @@ function ActiveRunner({ workout }: { workout: Workout }) {
           Put your phone down. Wear your gloves. Take your stance.
         </p>
         <p className="text-sm text-muted-foreground/70">The bell starts your first round.</p>
-        {/* Secondary, quiet — a bordered pill. The happy path is still to wait for
-            the bell; this stays understated so it doesn't read as a primary CTA. */}
-        <button
-          type="button"
+        {/* The app's standard action button, secondary variant — clearly a control,
+            but not the filled primary CTA (the happy path is still to wait). */}
+        <Button
+          variant="secondary"
           onClick={beginNow}
           aria-label="Begin now — ring the bell and start the first round"
-          className="mt-4 min-h-12 rounded-full border border-muted-foreground/30 px-6 py-3 text-sm font-medium text-muted-foreground transition-colors hover:border-foreground/50 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className="mt-4 h-14 w-full max-w-xs gap-2 rounded-2xl text-base font-semibold"
         >
+          <Play className="size-5" />
           Begin now
-        </button>
+        </Button>
       </main>
     );
   }
