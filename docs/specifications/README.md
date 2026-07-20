@@ -15,19 +15,25 @@ the system is built*; specs record *what experience we intend to create*.
 
 ## The workflow
 
+Discovery produces a **recommendation** before anything is specified or built.
+
 ```
-TODAY                          →   TOMORROW
-Objective                          Objective
-   ↓                                  ↓
-Implementation                     Discovery
-   ↓                                  ↓
-PR                                 Product & Experience Specification   ← this directory
-                                      ↓
-                                   Review  (spec Accepted)
-                                      ↓
-                                   Implementation
-                                      ↓
-                                   PR  (links the spec; spec → Implemented)
+Feature request
+     ↓
+Discovery
+     ↓
+Recommendation ──── NO ──────▶ DONE  (recorded; a success)
+     │        └──── NOT YET ──▶ DONE  (recorded; a success)
+     ↓
+    YES
+     ↓
+Product & Experience Specification   ← this directory
+     ↓
+Review  (Accepted)
+     ↓
+Implementation
+     ↓
+PR  (links the spec; spec → Implemented)
 ```
 
 When someone says *"I would like Workout History,"* the correct first response is **not**
@@ -41,22 +47,55 @@ directory defines the spec **document type**.
 
 ---
 
-## When a spec is required (proportionality)
+## Discovery is Corner's first *successful* phase
 
-Specs are mandatory for **experience-changing work** — anything the athlete sees, hears, or
-feels, or any new capability. They are **not** required for changes that alter no experience.
-This mirrors how ADRs are required only for boundary/contract changes, not every edit.
+Discovery ends in one of three outcomes — **and all three are successes:**
 
-| Change | Spec required? |
+- **YES** → the work is worth doing; write the specification, then implement.
+- **NO** → the work isn't worth doing; record why, and stop. **Success.**
+- **NOT YET** → right idea, wrong time; record what would change it, and stop. **Success.**
+
+A specification that proves the work is *not* worth doing is a success. A recommendation of
+**NO** is a success. A recommendation of **NOT YET** is a success. **Implementation is
+therefore not the measure of successful product discovery** — a good decision is.
+
+> Corner should never implement work simply because it was requested. Work should first be
+> **discovered**, then **recommended**, then **specified**, and finally **implemented when
+> appropriate**.
+
+A NO or NOT YET is still recorded here (a short spec whose Recommendation is NO/NOT YET,
+Status `Declined`/`Deferred`) — so the decision, and the thinking behind it, is remembered
+and never re-litigated from scratch.
+
+---
+
+## When discovery is required (proportionality)
+
+Discovery is mandatory for **product-changing or architecturally meaningful work** —
+anything that introduces or changes a product experience, or that introduces or changes
+ownership between the layers. The intention **isn't to slow Corner down; it's to slow down
+important decisions.** This mirrors how ADRs are required only for boundary/contract changes,
+not every edit.
+
+**Discovery required:**
+- BEGIN NOW · Workout History · Flight Recorder · Coach Personalities · Your Session
+- Bell Philosophy changes
+- anything introducing or changing **ownership** or **product experiences**
+
+**No discovery required:**
+- typo fixes · small styling fixes · bell *volume* tweaks
+- trivial refactors · investigations (INV-\*) · documentation-only changes · small bug fixes
+
+| Change | Discovery? |
 |---|---|
-| A new feature / screen / interaction (Workout History, a new coach behaviour) | **Yes** |
-| A change to how something *feels* (copy, timing, a bell, presence) | **Yes** |
-| A bug fix that restores intended behaviour | No — but say what the intended experience was |
-| Pure investigation (INV-\*), refactor, docs, tooling, tests | No — those have their own doc types (investigation notes, ADRs) |
-| Trivial/local change | No |
+| New product experience / capability (Workout History, Coach Personalities) | **Yes** |
+| A change to *ownership* between layers, or to a product philosophy (Bell Philosophy) | **Yes** |
+| A change to how something *feels* at the product level (a new presence, a transition) | **Yes** |
+| A small styling / volume / copy tweak that doesn't change the experience | No |
+| Bug fix restoring intended behaviour | No — but say what the intended experience was |
+| Investigation (INV-\*), refactor, docs, tooling, tests | No — those have their own doc types |
 
-If unsure, write the spec. A spec that shows the work is *not* worth doing is a success —
-Corner ships by removing as often as adding.
+If unsure, do the discovery. It's cheap; a wrong build isn't.
 
 ---
 
@@ -64,13 +103,16 @@ Corner ships by removing as often as adding.
 
 A spec is **product + experience discovery**, not a design or engineering document.
 
-- It **is**: the problem and who it's for; how the moment should *feel*; the happy path as a
-  short narrative; an explicit check against Corner's non-negotiables; non-goals; the options
-  considered and the recommended shape; open questions; success criteria.
+- It **is**: the problem and who it's for; a **recommendation** (YES / NO / NOT YET) with its
+  reasoning; and — when YES — how the moment should *feel*, the happy path as a short
+  narrative, an explicit check against Corner's non-negotiables, non-goals, the options
+  considered and the recommended shape, open questions, and success criteria.
 - It **is not**: an implementation plan, file list, API, or architecture. *How* it's built is
   decided later (and, if it crosses a boundary, in an **ADR** referenced by the eventual PR).
 
-Keep it short and honest. A spec is done when a reviewer can picture the experience and
+A NO / NOT YET spec can be **short** — the recommendation and its reasoning are enough; the
+detailed experience sections are only filled in on a YES. Keep it honest. A spec is done when
+a reviewer can either agree the work shouldn't happen (yet), or picture the experience and
 agree it belongs in Corner — before a line of code exists.
 
 Start from [`_TEMPLATE.md`](./_TEMPLATE.md).
@@ -83,10 +125,12 @@ Start from [`_TEMPLATE.md`](./_TEMPLATE.md).
   (e.g. `workout-history.md`, `begin-now.md`). We name by feature, **not** by PR number:
   the spec is written *before* the PR exists, so it can't know the number. The eventual PR
   links back to the spec, and the spec records the PR once merged.
-- **Status** (in the spec header): `Draft → In Review → Accepted → Implemented → Superseded`.
-  Only an **Accepted** spec should begin implementation. A spec that's later replaced is
-  marked `Superseded` and points to its successor (never deleted — the memory stays honest,
-  like the [Engineering Journey](../ENGINEERING_JOURNEY.md)).
+- **Status** (in the spec header): `Draft → In Review →` then one of
+  `Accepted` · `Declined` (NO) · `Deferred` (NOT YET) `→ Implemented → Superseded`.
+  Only an **Accepted** spec begins implementation; `Declined` and `Deferred` are **complete,
+  successful** outcomes and stay recorded (never deleted — the memory stays honest, like the
+  [Engineering Journey](../ENGINEERING_JOURNEY.md)). A replaced spec is `Superseded` and points
+  to its successor.
 - **One concern per spec**, like one concern per PR.
 
 ---
@@ -102,21 +146,23 @@ extends that. The **spec document type** belongs here in `docs/specifications/`,
 the governance home, and a second location would fragment it.
 
 **2. Can Product Specifications become a mandatory phase before every PR?**
-Before every **experience-changing** PR — yes (see the proportionality table). "Before every
-PR" without qualification would tax trivial fixes and non-experience work; scoping it to
-feature/experience PRs keeps the gate meaningful, matching the existing ADR rule.
+Before every **product-changing or architecturally meaningful** PR — yes (see the
+proportionality section). "Before every PR" without qualification would tax typo fixes,
+styling/volume tweaks, and non-product work; scoping it to product/ownership changes keeps
+the gate meaningful, matching the existing ADR rule. **Discovery slows down important
+decisions, not Corner.**
 
 **3. Can existing contribution guides be simplified?**
 Yes. The old *"open an issue describing the approach"* + *"design before implementation"* are
-subsumed by one clear first phase: **write the spec.** The spec *is* the agreed direction, so
-CONTRIBUTING's proposal flow gets shorter, not longer (see the CONTRIBUTING update in this
-change).
+subsumed by one clear first phase: **discovery → recommendation → (on YES) spec.** The spec
+*is* the agreed direction, so CONTRIBUTING's proposal flow gets shorter, not longer.
 
 **4. Should feature branches begin with discovery rather than implementation?**
-Yes. A feature branch's **first commit is its spec**, reviewable before code.
-- *Larger/uncertain* work: a **spec-only PR** merged first, then a follow-up implementation PR.
-- *Smaller* work: the spec is the first commit on the same branch; implementation follows in
-  the same PR, but the spec was written and reviewable before the code.
+Yes. **Product-changing work SHOULD prefer specification-only PRs before implementation** —
+the spec is reviewed and Accepted in its own PR, then a follow-up implementation PR references
+it. `SHOULD` is intentional: there will naturally be exceptions (a small, certain change may
+carry its spec as the first commit of the same branch). This protects what Corner has become
+good at: **thoughtful discussions before thoughtful implementations.**
 
 **Can specs become a reusable document type?** Yes — that is exactly what this directory and
 [`_TEMPLATE.md`](./_TEMPLATE.md) establish.

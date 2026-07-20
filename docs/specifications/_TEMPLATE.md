@@ -1,16 +1,20 @@
 <!--
 Product & Experience Specification — TEMPLATE.
 Copy to docs/specifications/<feature-slug>.md and fill in. Delete these comments and any
-sections that genuinely don't apply. Keep it short and honest: a reviewer should be able to
-picture the experience and agree it belongs in Corner *before* any code exists.
+sections that genuinely don't apply. Keep it short and honest.
 This is product + experience discovery — NOT a design/implementation plan.
+
+Discovery ends in a RECOMMENDATION: YES / NO / NOT YET — all three are successful outcomes.
+For a NO or NOT YET, the sections through "Recommendation" are enough; stop there and mark the
+Status Declined / Deferred. Only a YES fills in the experience / options / success sections.
 -->
 
 # Spec — <Feature name>
 
 | | |
 |---|---|
-| **Status** | Draft · In Review · Accepted · Implemented · Superseded |
+| **Status** | Draft · In Review · Accepted · **Declined** (NO) · **Deferred** (NOT YET) · Implemented · Superseded |
+| **Recommendation** | YES · NO · NOT YET |
 | **Author** | <name> |
 | **Date** | <YYYY-MM-DD> |
 | **PR** | <#-, filled once opened> |
@@ -25,6 +29,17 @@ This is product + experience discovery — NOT a design/implementation plan.
 What's missing, and why it matters *today*. Ground it in evidence where possible (UAT
 feedback, a user journey, an investigation) rather than assertion. What does the athlete
 currently feel that they shouldn't — or not feel that they should?
+
+## Recommendation — YES / NO / NOT YET
+
+The discovery outcome, up front, in one line plus its reasoning:
+
+- **YES** — worth doing now; the rest of this spec details it.
+- **NO** — not worth doing; say why. A NO is a success — stop here.
+- **NOT YET** — right idea, wrong time; say what would change it. A NOT YET is a success —
+  stop here.
+
+*(A NO / NOT YET spec can end after this section. A YES continues below.)*
 
 ## Who it's for
 
