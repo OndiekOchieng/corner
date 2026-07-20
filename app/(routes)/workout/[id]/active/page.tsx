@@ -72,7 +72,7 @@ function ActiveRunner({ workout }: { workout: Workout }) {
     ],
   );
 
-  const { snapshot, isSupported, isPreparing, pause, resume, quit, getSessionId, getMediaDiagnostics, getSpeechTrace, getStory } =
+  const { snapshot, isSupported, isPreparing, beginNow, pause, resume, quit, getSessionId, getMediaDiagnostics, getSpeechTrace, getStory } =
     useCoachedWorkout(workout, settings);
 
   // When the engine finishes, let the closing bell + coach line land, then move
@@ -102,6 +102,10 @@ function ActiveRunner({ workout }: { workout: Workout }) {
   // PR-031 — Grace period: room to arrive. No timer, no countdown, no coaching —
   // just presence, until the opening bell rings and boxing begins. The Leave guard
   // stays active so the athlete can still step out.
+  //
+  // PR-033 — BEGIN NOW: a quiet escape hatch for the already-prepared athlete. It is
+  // NOT the happy path; the bell will ring on its own. It rings the bell immediately
+  // for those who have already arrived — one tap, no countdown, no numbers.
   if (isPreparing) {
     return (
       <main className="screen flex flex-col items-center justify-center gap-4 text-center">
@@ -112,6 +116,15 @@ function ActiveRunner({ workout }: { workout: Workout }) {
           Put your phone down. Wear your gloves. Take your stance.
         </p>
         <p className="text-sm text-muted-foreground/70">The bell starts your first round.</p>
+        {/* Secondary, quiet — the happy path is to simply wait for the bell. */}
+        <button
+          type="button"
+          onClick={beginNow}
+          aria-label="Begin now — ring the bell and start the first round"
+          className="mt-4 min-h-12 rounded-full px-6 py-3 text-sm font-medium text-muted-foreground underline decoration-dotted underline-offset-4 transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          Begin now
+        </button>
       </main>
     );
   }
