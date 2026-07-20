@@ -53,10 +53,10 @@ useCoachedWorkout:
 - **Copy:** "Begin now" — boring and unambiguous. The `aria-label` expands it to *"Begin
   now — ring the bell and start the first round."* START = *I am beginning this
   experience*; BEGIN NOW = *I have arrived.*
-- **Placement & weight:** below the preparation copy, using the app's standard action
-  button (the shared `<Button>`, `secondary` variant with a Play icon) so it looks native —
-  but **not** the filled primary CTA. It is an escape hatch, so it must not compete with the
-  calm of the room or imply the athlete *should* tap it.
+- **Placement & weight:** below the preparation copy, using the app's **primary action
+  button** — the shared `<Button>` styled like "Start workout" / "Resume" (`bg-primary`,
+  `h-16 rounded-2xl`, Play icon), constrained to `max-w-xs` and centred — so it looks native
+  and is easy to hit with gloves.
 - **Interaction:** a single tap → ends grace → unlocks audio (gesture) → opening bell →
   boxing. Idempotent: the shared `begin()` guard means BEGIN NOW and the 15-second timer can
   never both start the workout, and a second tap does nothing.

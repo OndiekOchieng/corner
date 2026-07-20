@@ -118,15 +118,13 @@ function ActiveRunner({ workout }: { workout: Workout }) {
           Put your phone down. Wear your gloves. Take your stance.
         </p>
         <p className="text-sm text-muted-foreground/70">The bell starts your first round.</p>
-        {/* The app's standard action button, secondary variant — clearly a control,
-            but not the filled primary CTA (the happy path is still to wait). */}
+        {/* The app's primary action button (matches "Start workout" / "Resume"). */}
         <Button
-          variant="secondary"
           onClick={beginNow}
           aria-label="Begin now — ring the bell and start the first round"
-          className="mt-4 h-14 w-full max-w-xs gap-2 rounded-2xl text-base font-semibold"
+          className="mt-4 h-16 w-full max-w-xs gap-2 rounded-2xl bg-primary text-lg font-semibold text-primary-foreground hover:bg-primary/90"
         >
-          <Play className="size-5" />
+          <Play className="size-6" />
           Begin now
         </Button>
       </main>
