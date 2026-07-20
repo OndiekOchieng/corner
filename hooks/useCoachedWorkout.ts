@@ -7,6 +7,7 @@ import { createHostRuntime, type HostRuntime } from '@/src/lib/host';
 import { createCoachRuntimePlugin, type CoachRuntimePlugin, type CoachDiagnosticsSnapshot } from '@/src/lib/coaching';
 import { toWorkoutConfig, createSessionRepository } from '@/src/lib/integration';
 import { PersistenceSubscriber } from '@/src/lib/session';
+import { FlightRecorder } from '@/src/lib/recorder';
 import {
   MediaRuntime,
   createMediaRuntimePlugin,
@@ -44,6 +45,8 @@ export interface UseCoachedWorkoutReturn {
   getMediaDiagnostics: () => MediaDiagnosticsSnapshot | null;
   /** Live speech-pipeline trace: coach + speech boundary counters (dev-only). */
   getSpeechTrace: () => SpeechPipelineTrace;
+  /** The workout's story so far, as markdown — Flight Recorder (dev-only, PR-032). */
+  getStory: () => string;
 }
 
 type Controller = HostRuntime['controller'];
@@ -127,6 +130,7 @@ export function useCoachedWorkout(
   const runtimeRef = useRef<HostRuntime | null>(null);
   const mediaRef = useRef<MediaRuntime | null>(null);
   const coachRef = useRef<CoachRuntimePlugin | null>(null);
+  const recorderRef = useRef<FlightRecorder | null>(null);
   const settingsRef = useRef(settings);
   settingsRef.current = settings;
 
@@ -145,6 +149,11 @@ export function useCoachedWorkout(
     media.configureSpeech(speechSettings(s));
     media.setBellsEnabled(s.bellsEnabled);
 
+    // Flight Recorder (PR-032): a parasitic observer of the workout's own story. It
+    // owns nothing — it decorates the coach's sink to hear what was actually said,
+    // and registers on the bus below to hear the workout's shape. Dev-only surface.
+    const recorder = new FlightRecorder(workout.name);
+
     // Build the engine config ONCE and share it with the coach, so the coach's
     // countdown-preemption thresholds are the same ones the engine schedules
     // against (PR-022) — a single source of truth per workout.
@@ -152,7 +161,9 @@ export function useCoachedWorkout(
 
     const coach = createCoachRuntimePlugin({
       personality: s.coachPack,
-      sink: media.speechSink(),
+      // The recorder decorates the sink transparently — it hears every spoken line
+      // and forwards each call unchanged (it observes, it never controls).
+      sink: recorder.observeSpeech(media.speechSink()),
       workoutName: workout.name,
       // Countdown thresholds derived from the same engine config (PR-022).
       // undefined ⇒ the coach falls back to the engine default.
@@ -189,9 +200,13 @@ export function useCoachedWorkout(
       },
     );
     runtime.eventBus.register(persistence);
+    // Highest priority (1000) so it stamps the moment before anyone reacts; it never
+    // mutates events and produces no side effects on the runtime.
+    runtime.eventBus.register(recorder);
 
     mediaRef.current = media;
     coachRef.current = coach;
+    recorderRef.current = recorder;
     runtimeRef.current = runtime;
     setController(runtime.controller);
     setIsSupported(media.capabilities().speech);
@@ -218,6 +233,7 @@ export function useCoachedWorkout(
       runtimeRef.current = null;
       mediaRef.current = null;
       coachRef.current = null;
+      recorderRef.current = null;
       setController(null);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -257,6 +273,8 @@ export function useCoachedWorkout(
     }),
     [],
   );
+  /** The story of this workout so far, as markdown (dev-only; PR-032). */
+  const getStory = useCallback(() => recorderRef.current?.export() ?? '', []);
 
   return {
     snapshot,
@@ -268,5 +286,6 @@ export function useCoachedWorkout(
     getSessionId,
     getMediaDiagnostics,
     getSpeechTrace,
+    getStory,
   };
 }

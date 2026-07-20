@@ -65,6 +65,8 @@ function Row({ k, v }: { k: string; v: string }) {
 interface Props {
   getMediaDiagnostics: () => MediaDiagnosticsSnapshot | null;
   getSpeechTrace: () => SpeechPipelineTrace;
+  /** The workout's story so far, as markdown — Flight Recorder (PR-032). */
+  getStory: () => string;
   workout: WorkoutSnapshot;
 }
 
@@ -73,10 +75,26 @@ interface Props {
  * capabilities, audio/speech/wake-lock state, voices, and the live workout state.
  * Polls at ~2 Hz. Never rendered in production.
  */
-export function WorkoutDiagnostics({ getMediaDiagnostics, getSpeechTrace, workout }: Props) {
+export function WorkoutDiagnostics({ getMediaDiagnostics, getSpeechTrace, getStory, workout }: Props) {
   const [media, setMedia] = useState<MediaDiagnosticsSnapshot | null>(null);
   const [trace, setTrace] = useState<SpeechPipelineTrace | null>(null);
   const [open, setOpen] = useState(true);
+  const [copied, setCopied] = useState(false);
+
+  // Flight Recorder: copy the workout's story to the clipboard (and log it) so a
+  // strange session can be retold instead of screenshotted. Dev-only.
+  const grabStory = () => {
+    const story = getStory();
+    // eslint-disable-next-line no-console
+    console.log(story);
+    void navigator.clipboard?.writeText(story).then(
+      () => {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 1200);
+      },
+      () => {},
+    );
+  };
 
   useEffect(() => {
     if (!IS_DEV) return;
@@ -96,9 +114,14 @@ export function WorkoutDiagnostics({ getMediaDiagnostics, getSpeechTrace, workou
 
   return (
     <div className="fixed bottom-2 left-2 z-50 max-w-[92vw] rounded-lg bg-black/85 p-2 font-mono text-[10px] leading-tight text-white/90 ring-1 ring-white/20">
-      <button onClick={() => setOpen((o) => !o)} className="mb-1 font-bold tracking-wide text-white">
-        DIAG {open ? '▾' : '▸'}
-      </button>
+      <div className="mb-1 flex items-center gap-3">
+        <button onClick={() => setOpen((o) => !o)} className="font-bold tracking-wide text-white">
+          DIAG {open ? '▾' : '▸'}
+        </button>
+        <button onClick={grabStory} className="text-white/60 underline decoration-dotted hover:text-white">
+          {copied ? 'story copied' : 'copy story'}
+        </button>
+      </div>
       {open && (
         <div className="space-y-0.5">
           <Row k="platform" v={`${platformLabel()} · iOS:${iosVersion()}`} />
