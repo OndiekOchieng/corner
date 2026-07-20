@@ -116,12 +116,13 @@ function ActiveRunner({ workout }: { workout: Workout }) {
           Put your phone down. Wear your gloves. Take your stance.
         </p>
         <p className="text-sm text-muted-foreground/70">The bell starts your first round.</p>
-        {/* Secondary, quiet — the happy path is to simply wait for the bell. */}
+        {/* Secondary, quiet — a bordered pill. The happy path is still to wait for
+            the bell; this stays understated so it doesn't read as a primary CTA. */}
         <button
           type="button"
           onClick={beginNow}
           aria-label="Begin now — ring the bell and start the first round"
-          className="mt-4 min-h-12 rounded-full px-6 py-3 text-sm font-medium text-muted-foreground underline decoration-dotted underline-offset-4 transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className="mt-4 min-h-12 rounded-full border border-muted-foreground/30 px-6 py-3 text-sm font-medium text-muted-foreground transition-colors hover:border-foreground/50 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
           Begin now
         </button>

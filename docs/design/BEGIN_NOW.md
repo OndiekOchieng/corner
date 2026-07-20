@@ -53,9 +53,9 @@ useCoachedWorkout:
 - **Copy:** "Begin now" — boring and unambiguous. The `aria-label` expands it to *"Begin
   now — ring the bell and start the first round."* START = *I am beginning this
   experience*; BEGIN NOW = *I have arrived.*
-- **Placement & weight:** below the preparation copy, styled **quiet and secondary** (muted
-  text, dotted underline) — never a loud primary CTA. It is an escape hatch, so it must not
-  compete with the calm of the room or imply the athlete *should* tap it.
+- **Placement & weight:** below the preparation copy, styled **quiet and secondary** — a
+  bordered pill with muted text (not a filled, primary CTA). It is an escape hatch, so it
+  must not compete with the calm of the room or imply the athlete *should* tap it.
 - **Interaction:** a single tap → ends grace → unlocks audio (gesture) → opening bell →
   boxing. Idempotent: the shared `begin()` guard means BEGIN NOW and the 15-second timer can
   never both start the workout, and a second tap does nothing.
