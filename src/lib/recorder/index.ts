@@ -9,4 +9,5 @@ export {
   FlightRecorder,
   FLIGHT_RECORDER_SUBSCRIBER_ID,
   type StoryMoment,
+  type StoryKind,
 } from './FlightRecorder';

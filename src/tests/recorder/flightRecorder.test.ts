@@ -61,22 +61,47 @@ describe('FlightRecorder (PR-032)', () => {
     expect([...seqs]).toEqual([...seqs].sort((a, b) => a - b));
   });
 
-  it('omits noise, and a fresh workout begins the story anew', () => {
+  it('filters noise from the beautiful story but keeps EVERYTHING for developers (PR-034)', () => {
     const rec = new FlightRecorder();
     rec.handle(ev('WORKOUT_STARTED', 1, 0, { workoutId: 'w', totalRounds: 1, plannedDurationMs: 1000, hasWarmup: false }));
     rec.handle(ev('COUNTDOWN_SECOND', 2, 5000, { context: 'round', secondsRemaining: 5 }));
-    rec.handle(ev('COACH_CUE', 3, 6000, { roundIndex: 0, cueId: 'c', text: 'x', atMs: 6000 }));
+    rec.handle(ev('COACH_CUE', 3, 6000, { roundIndex: 0, cueId: 'c', text: 'Move', atMs: 6000 }));
     rec.handle(ev('ROUND_STARTED', 4, 0, round(1, 'Jab')));
 
-    // The coach no longer counts (PR-030), and the raw cue is not a story line —
-    // only what was SAID (via observeSpeech) is. So neither shows up here.
-    expect(rec.entries().some((m) => /countdown|second/i.test(m.line))).toBe(false);
-    expect(rec.entries().some((m) => /COACH_CUE|cueId/i.test(m.line))).toBe(false);
-    expect(rec.entries().length).toBeGreaterThan(0);
+    // The beautiful (default) story hides the verbose detail…
+    const beautiful = rec.export();
+    expect(beautiful).not.toMatch(/countdown/i);
+    expect(beautiful).not.toContain('Cue scheduled');
+    // …but developer mode filters NOTHING — countdown + scheduled cue are there.
+    const verbose = rec.export({ verbose: true });
+    expect(verbose).toContain('Countdown: 5.');
+    expect(verbose).toContain('Cue scheduled: Move');
+    // Everything is always captured; only rendering differs.
+    expect(rec.entries().some((m) => m.kind === 'countdown')).toBe(true);
+    expect(rec.entries().some((m) => m.kind === 'cue')).toBe(true);
 
     // A new WORKOUT_STARTED wipes the prior story.
     rec.handle(ev('WORKOUT_STARTED', 5, 0, { workoutId: 'w2', totalRounds: 1, plannedDurationMs: 1000, hasWarmup: false }));
     expect(rec.entries().map((m) => m.line)).toEqual(['Workout started.']);
+  });
+
+  it('records speech interruptions (verbose) and exports valid JSON (PR-034)', () => {
+    const rec = new FlightRecorder('W');
+    const sink = rec.observeSpeech({ speak: () => {}, pause: () => {}, resume: () => {}, cancel: () => {}, clearPending: () => {} });
+    rec.handle(ev('WORKOUT_STARTED', 1, 0, { workoutId: 'w', totalRounds: 1, plannedDurationMs: 1000, hasWarmup: false }));
+    sink.pause();
+    sink.resume();
+
+    // Speech interruptions are verbose-only detail (kept out of the beautiful story).
+    expect(rec.export()).not.toContain('Speech paused.');
+    expect(rec.export({ verbose: true })).toContain('Speech paused.');
+    expect(rec.export({ verbose: true })).toContain('Speech resumed.');
+
+    // JSON export is parseable and carries every moment with its kind + formatted time.
+    const parsed = JSON.parse(rec.exportJson()) as { title: string; moments: { kind: string; line: string; at: string }[] };
+    expect(parsed.title).toBe('W');
+    expect(parsed.moments.some((m) => m.kind === 'speech' && /paused/.test(m.line))).toBe(true);
+    expect(parsed.moments[0]).toMatchObject({ kind: 'workout', at: '0:00' });
   });
 
   it('observeSpeech observes but never controls — every call is forwarded unchanged', () => {
