@@ -43,15 +43,26 @@ docs/                Design docs, ADRs, product + coaching + content frameworks
 
 ## How we work
 
-Corner is built in a particular order, and contributions are expected to follow it.
-The philosophy behind these is in [docs/ARCHITECTURE_PRINCIPLES.md](docs/ARCHITECTURE_PRINCIPLES.md).
+**Corner's first phase is discovery, not implementation.** Contributions follow a
+particular order; the philosophy is in
+[docs/ARCHITECTURE_PRINCIPLES.md](docs/ARCHITECTURE_PRINCIPLES.md).
 
+- **Discovery first.** For any **product-changing or architecturally meaningful** work —
+  anything that introduces or changes a product experience or the ownership between layers
+  — begin with discovery and a [Product & Experience Specification](docs/specifications/):
+  *what should this feel like, for whom, and why*. Discovery produces a **recommendation —
+  YES, NO, or NOT YET — and all three are successful outcomes.** Only a YES is specified,
+  reviewed, and (once **Accepted**) implemented. Implementation is the *last* phase, not the
+  first; when asked for a feature, the right first move is discovery, not building. (Typo and
+  styling/volume tweaks, small bug fixes, trivial refactors, investigations, and docs are
+  exempt — see [docs/specifications/README.md](docs/specifications/README.md).)
+  **Corner should never implement work simply because it was requested.**
 - **Architecture first.** Understand the layers before you change them. Data flows one
   way (Engine → Host → Event → Coach → Media); know which layer owns your concern.
   A change that needs to cross a boundary is a design discussion, not a quick edit.
-- **Design before implementation.** For anything non-trivial, agree the approach first
-  — in an issue, and in an ADR if it touches a boundary, a public contract, or a
-  platform invariant. Several of our best PRs shipped *only* documents. Design is work.
+- **Design after discovery.** Once a spec is Accepted, agree the *approach*; if it
+  touches a boundary, a public contract, or a platform invariant, capture that in an ADR.
+  Several of our best PRs shipped *only* documents. Design is work.
 - **Evidence before code.** When something is broken, prove *why* with instrumentation
   or an isolated reproduction before changing behaviour — don't guess-and-patch. The
   speech-lifecycle fix followed a documented investigation, not a hunch.
@@ -81,21 +92,38 @@ the approach — or to propose the boundary change explicitly (below).
 
 ## How decisions are documented
 
-Significant design decisions are **Architecture Decision Records** under
-[`docs/architecture/`](docs/architecture/), with a running
-[DECISIONS.md](docs/architecture/DECISIONS.md) log. If your change alters an
-architectural boundary, a public contract, or a platform invariant, add or amend an
-ADR in the same PR and link it. Small, local changes don't need one.
+Corner keeps two decision records, one product and one technical:
+
+- **Product & Experience Specifications** — [`docs/specifications/`](docs/specifications/) —
+  *what an experience should feel like, for whom, and why*, written and reviewed **before**
+  it's built. Required for product-changing or architecturally meaningful work; discovery may
+  end in YES, NO, or NOT YET — all successful.
+- **Architecture Decision Records (ADRs)** — [`docs/architecture/`](docs/architecture/), with
+  a running [DECISIONS.md](docs/architecture/DECISIONS.md) log — *how the system is built*.
+  Required when a change alters an architectural boundary, a public contract, or a platform
+  invariant; add or amend one in the same PR and link it.
+
+Small, local changes and non-product work need neither. A feature typically produces a
+spec first (recommendation YES), then (if it crosses a boundary) an ADR, then the PR that
+links both.
 
 ## How to propose changes
 
-1. **Open an issue first** for anything non-trivial — describe the problem and the
-   intended approach, so we can agree on direction before code.
-2. **Branch** from `main`.
+1. **Start with discovery.** For product-changing or architecturally meaningful work, write a
+   [Product & Experience Specification](docs/specifications/) (copy
+   [`_TEMPLATE.md`](docs/specifications/_TEMPLATE.md)). It ends in a **recommendation — YES,
+   NO, or NOT YET.** A NO or NOT YET is a complete, successful outcome: record it (Status
+   `Declined`/`Deferred`) and stop — no implementation. Only a YES, once **Accepted**, is the
+   agreed direction (so there's no separate "issue describing the approach"). For a bug fix or
+   refactor, a short issue is enough.
+2. **Prefer a specification-only PR first.** Product-changing work SHOULD land its spec as its
+   own PR, review it to `Accepted`, then open a follow-up implementation PR that links it.
+   `SHOULD`, not MUST — a small, certain change may carry its spec as the first commit of the
+   same branch. Either way, **branch** from `main`.
 3. Keep PRs **focused and small**. One concern per PR.
 4. Ensure `pnpm test`, `pnpm build`, and type-checking pass.
-5. Write a clear PR description: what changed, why, and how it was verified. Link any
-   issue or ADR.
+5. Write a clear PR description: what changed, why, and how it was verified. **Link the
+   spec** (and any ADR); mark the spec `Implemented`.
 6. Be ready to iterate in review. Boundaries and determinism will be checked.
 
 ## How to write a new workout
