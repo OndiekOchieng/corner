@@ -36,6 +36,8 @@ export interface UseCoachedWorkoutReturn {
   isSupported: boolean;
   /** True during the pre-workout grace period (PR-031) — before the opening bell. */
   isPreparing: boolean;
+  /** End the grace period early and ring the opening bell — BEGIN NOW (PR-033). */
+  beginNow: () => void;
   pause: () => void;
   resume: () => void;
   quit: () => void;
@@ -131,6 +133,9 @@ export function useCoachedWorkout(
   const mediaRef = useRef<MediaRuntime | null>(null);
   const coachRef = useRef<CoachRuntimePlugin | null>(null);
   const recorderRef = useRef<FlightRecorder | null>(null);
+  /** Ends the grace period and rings the opening bell — the shared path for the
+   *  15 s timer AND the BEGIN NOW escape hatch (PR-033). Idempotent. */
+  const beginNowRef = useRef<(() => void) | null>(null);
   const settingsRef = useRef(settings);
   settingsRef.current = settings;
 
@@ -218,13 +223,26 @@ export function useCoachedWorkout(
     void media.unlock();
     setIsPreparing(true);
 
-    // PR-031 — Grace period: 15 s of silence to arrive, then the Engine starts and
-    // its first event (ROUND_STARTED) rings the opening bell. The Engine is never
-    // told the grace happened; from its side, the bell rang and t=0 began.
-    const graceTimer = window.setTimeout(() => {
+    // End the grace period and begin: start the Engine, whose first event
+    // (ROUND_STARTED) rings the opening bell. One idempotent path, taken either by
+    // the 15 s timer (happy path) or by BEGIN NOW (PR-033) — the athlete taps once,
+    // the bell rings, boxing begins. No new phase, no engine change: the Engine is
+    // never told the grace happened.
+    let begun = false;
+    const begin = () => {
+      if (begun) return;
+      begun = true;
+      window.clearTimeout(graceTimer);
+      // BEGIN NOW is a user gesture — take the chance to unlock audio so the opening
+      // bell is heard (harmless retry on the timer path). PR-033.
+      void media.unlock();
       setIsPreparing(false);
       runtime.controller.start();
-    }, GRACE_PERIOD_MS);
+    };
+
+    // PR-031 — Grace period: 15 s of silence to arrive, then begin automatically.
+    const graceTimer = window.setTimeout(begin, GRACE_PERIOD_MS);
+    beginNowRef.current = begin;
 
     return () => {
       window.clearTimeout(graceTimer);
@@ -234,6 +252,7 @@ export function useCoachedWorkout(
       mediaRef.current = null;
       coachRef.current = null;
       recorderRef.current = null;
+      beginNowRef.current = null;
       setController(null);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -258,6 +277,9 @@ export function useCoachedWorkout(
   );
   const snapshot = useSyncExternalStore(subscribe, getSnapshot, () => IDLE_SNAPSHOT);
 
+  // BEGIN NOW (PR-033): the athlete has already arrived — end the grace early and
+  // ring the bell. A no-op once boxing has begun (idempotent via the shared path).
+  const beginNow = useCallback(() => beginNowRef.current?.(), []);
   const pause = useCallback(() => runtimeRef.current?.controller.pause(), []);
   const resume = useCallback(() => runtimeRef.current?.controller.resume(), []);
   const quit = useCallback(() => runtimeRef.current?.controller.cancel(), []);
@@ -280,6 +302,7 @@ export function useCoachedWorkout(
     snapshot,
     isSupported,
     isPreparing,
+    beginNow,
     pause,
     resume,
     quit,

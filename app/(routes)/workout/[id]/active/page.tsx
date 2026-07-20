@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import { Play } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { WorkoutScreen } from '@/components/Workout/WorkoutScreen';
 import { LeaveWorkoutGuard } from '@/components/Workout/LeaveWorkoutGuard';
 import { WorkoutDiagnostics } from '@/components/dev/WorkoutDiagnostics';
@@ -72,7 +74,7 @@ function ActiveRunner({ workout }: { workout: Workout }) {
     ],
   );
 
-  const { snapshot, isSupported, isPreparing, pause, resume, quit, getSessionId, getMediaDiagnostics, getSpeechTrace, getStory } =
+  const { snapshot, isSupported, isPreparing, beginNow, pause, resume, quit, getSessionId, getMediaDiagnostics, getSpeechTrace, getStory } =
     useCoachedWorkout(workout, settings);
 
   // When the engine finishes, let the closing bell + coach line land, then move
@@ -102,6 +104,10 @@ function ActiveRunner({ workout }: { workout: Workout }) {
   // PR-031 — Grace period: room to arrive. No timer, no countdown, no coaching —
   // just presence, until the opening bell rings and boxing begins. The Leave guard
   // stays active so the athlete can still step out.
+  //
+  // PR-033 — BEGIN NOW: a quiet escape hatch for the already-prepared athlete. It is
+  // NOT the happy path; the bell will ring on its own. It rings the bell immediately
+  // for those who have already arrived — one tap, no countdown, no numbers.
   if (isPreparing) {
     return (
       <main className="screen flex flex-col items-center justify-center gap-4 text-center">
@@ -112,6 +118,15 @@ function ActiveRunner({ workout }: { workout: Workout }) {
           Put your phone down. Wear your gloves. Take your stance.
         </p>
         <p className="text-sm text-muted-foreground/70">The bell starts your first round.</p>
+        {/* The app's primary action button (matches "Start workout" / "Resume"). */}
+        <Button
+          onClick={beginNow}
+          aria-label="Begin now — ring the bell and start the first round"
+          className="mt-4 h-16 w-full max-w-xs gap-2 rounded-2xl bg-primary text-lg font-semibold text-primary-foreground hover:bg-primary/90"
+        >
+          <Play className="size-6" />
+          Begin now
+        </Button>
       </main>
     );
   }
