@@ -65,9 +65,21 @@ function Row({ k, v }: { k: string; v: string }) {
 interface Props {
   getMediaDiagnostics: () => MediaDiagnosticsSnapshot | null;
   getSpeechTrace: () => SpeechPipelineTrace;
-  /** The workout's story so far, as markdown — Flight Recorder (PR-032). */
+  /** The full (verbose) workout story as markdown — Flight Recorder (PR-032/034). */
   getStory: () => string;
+  /** The full workout story as JSON — Flight Recorder developer export (PR-034). */
+  getStoryJson: () => string;
   workout: WorkoutSnapshot;
+}
+
+/** Download a string as a file (dev-only export). */
+function download(filename: string, content: string, type: string): void {
+  const url = URL.createObjectURL(new Blob([content], { type }));
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
 }
 
 /**
@@ -75,19 +87,18 @@ interface Props {
  * capabilities, audio/speech/wake-lock state, voices, and the live workout state.
  * Polls at ~2 Hz. Never rendered in production.
  */
-export function WorkoutDiagnostics({ getMediaDiagnostics, getSpeechTrace, getStory, workout }: Props) {
+export function WorkoutDiagnostics({ getMediaDiagnostics, getSpeechTrace, getStory, getStoryJson, workout }: Props) {
   const [media, setMedia] = useState<MediaDiagnosticsSnapshot | null>(null);
   const [trace, setTrace] = useState<SpeechPipelineTrace | null>(null);
+  const [story, setStory] = useState('');
   const [open, setOpen] = useState(true);
+  const [recorderOpen, setRecorderOpen] = useState(false);
   const [copied, setCopied] = useState(false);
 
-  // Flight Recorder: copy the workout's story to the clipboard (and log it) so a
-  // strange session can be retold instead of screenshotted. Dev-only.
-  const grabStory = () => {
-    const story = getStory();
-    // eslint-disable-next-line no-console
-    console.log(story);
-    void navigator.clipboard?.writeText(story).then(
+  // Flight Recorder (PR-034): the workout's story, right here in DIAG — so a strange
+  // session can be *retold* instead of screenshotted. Copy or export it.
+  const copyStory = () => {
+    void navigator.clipboard?.writeText(getStory()).then(
       () => {
         setCopied(true);
         setTimeout(() => setCopied(false), 1200);
@@ -95,17 +106,20 @@ export function WorkoutDiagnostics({ getMediaDiagnostics, getSpeechTrace, getSto
       () => {},
     );
   };
+  const exportMarkdown = () => download('workout-story.md', getStory(), 'text/markdown');
+  const exportJson = () => download('workout-story.json', getStoryJson(), 'application/json');
 
   useEffect(() => {
     if (!IS_DEV) return;
     const tick = () => {
       setMedia(getMediaDiagnostics());
       setTrace(getSpeechTrace());
+      setStory(getStory());
     };
     tick();
     const id = setInterval(tick, 500);
     return () => clearInterval(id);
-  }, [getMediaDiagnostics, getSpeechTrace]);
+  }, [getMediaDiagnostics, getSpeechTrace, getStory]);
 
   if (!IS_DEV) return null;
 
@@ -117,9 +131,6 @@ export function WorkoutDiagnostics({ getMediaDiagnostics, getSpeechTrace, getSto
       <div className="mb-1 flex items-center gap-3">
         <button onClick={() => setOpen((o) => !o)} className="font-bold tracking-wide text-white">
           DIAG {open ? '▾' : '▸'}
-        </button>
-        <button onClick={grabStory} className="text-white/60 underline decoration-dotted hover:text-white">
-          {copied ? 'story copied' : 'copy story'}
         </button>
       </div>
       {open && (
@@ -189,6 +200,35 @@ export function WorkoutDiagnostics({ getMediaDiagnostics, getSpeechTrace, getSto
               </>
             ) : (
               <Row k="service" v="(no SpeechService)" />
+            )}
+          </div>
+
+          {/* Flight Recorder — the story of this workout, in one place (PR-034). */}
+          <div className="mt-1 border-t border-white/15 pt-1">
+            <button
+              onClick={() => setRecorderOpen((o) => !o)}
+              className="font-bold tracking-wide text-white/90"
+            >
+              FLIGHT RECORDER {recorderOpen ? '▾' : '▸'}
+            </button>
+            {recorderOpen && (
+              <div className="mt-1 space-y-1">
+                <div className="flex items-center gap-3">
+                  <button onClick={copyStory} className="text-white/70 underline decoration-dotted hover:text-white">
+                    {copied ? 'copied ✓' : 'copy'}
+                  </button>
+                  <button onClick={exportMarkdown} className="text-white/70 underline decoration-dotted hover:text-white">
+                    .md
+                  </button>
+                  <button onClick={exportJson} className="text-white/70 underline decoration-dotted hover:text-white">
+                    .json
+                  </button>
+                </div>
+                {/* Workout Timeline — the full, unfiltered story. */}
+                <pre className="max-h-48 max-w-[88vw] overflow-auto whitespace-pre-wrap break-words rounded bg-white/5 p-1.5 text-white/80">
+                  {story || '(nothing recorded yet)'}
+                </pre>
+              </div>
             )}
           </div>
         </div>

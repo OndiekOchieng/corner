@@ -128,3 +128,83 @@ No new runtime/manager/coordinator. No ownership. Nothing exists solely for the 
 No History/analytics/statistics/achievements/cloud/sharing. It is one of the least
 interesting pieces of engineering in Corner — and one of the most valuable pieces of memory
 it now possesses.
+
+---
+
+# Surfacing the recorder — developer experience (PR-034)
+
+Remembering is useless if nobody can read it. PR-034 surfaces the story **in the app**, so
+the next time Safari behaves strangely the answer is not *"no idea, send screenshots"* — it
+is *"let's look at the Workout Story."* **Dev-only** — no History, analytics, summaries,
+achievements, statistics, or production surface.
+
+## Where developers find it
+
+In the on-screen **DIAG** overlay (dev builds only), a **FLIGHT RECORDER** panel:
+
+```
+DIAG ▾
+  platform · env · workout · audio · speech · wakelock counts · coach · service …
+  FLIGHT RECORDER ▾
+    [copy] [.md] [.json]
+    ┌───────────────────────────────────────────────┐
+    │ - `0:00`  Workout started.                     │
+    │ - `0:04`  Opening bell. Round 1 started — Jab.  │
+    │ - `0:06`  Countdown: 10.                        │
+    │ - `0:10`  Coach: Jab                            │
+    │ - `0:16`  Round 1 completed.                    │  ← the full Workout Timeline,
+    │ - …                                            │     live, scrollable
+    └───────────────────────────────────────────────┘
+```
+
+- **Workout Timeline** — the live, scrollable story (polled at ~2 Hz), the *full verbose*
+  view (nothing filtered).
+- **copy** — the markdown story to the clipboard.
+- **.md / .json** — download the story as `workout-story.md` (markdown) or
+  `workout-story.json` (every moment: `at`, `atMs`, `seq`, `kind`, `line`).
+
+Both markdown and JSON are offered: markdown to read and paste into an issue, JSON for
+tooling/diffing across sessions.
+
+## DO NOT FILTER — beautiful vs verbose
+
+The recorder now captures **everything it sees on the bus and through the sink** and filters
+only at *render* time:
+
+- `export()` — the **beautiful** athlete story (structural + the coach's voice).
+- `export({ verbose: true })` — **developer mode: filters nothing.** Cues *scheduled* vs
+  *said*, every countdown tick, warm-up/rest completions, and speech interruptions
+  (paused / resumed / stopped / queue cleared) are all there. The DIAG panel shows this.
+
+Verbose kinds (`cue`, `countdown`, `speech`, `debug`) are recorded but hidden from the
+beautiful story; developer mode shows them. Nothing is dropped at capture — only rendering
+differs — so a session can always be retold in full after the fact.
+
+## Honest boundary — what the story does and doesn't hold
+
+The recorder stays **parasitic**: it observes the event bus and the coach's sink, and
+nothing was added anywhere solely to feed it. Therefore the timeline covers the **engine +
+coaching** narrative (workout/rounds/rests/countdowns/cues/coaching/speech-interruptions).
+
+**Screen visibility and wake-lock transitions are *not* on the bus** — they are
+media-internal — so they are **not** in the story timeline. They live, live-updating, in the
+**same DIAG overlay** a few rows up (`wakelock … held:… · wl request/held/counts`,
+`vis:…`). So a Safari investigation reads *both* panels in one place: the Workout Story for
+the coaching narrative, the media rows for visibility/wake-lock/audio. Merging media
+lifecycle into the timeline would require the recorder to observe the Media Runtime — a
+coupling this PR deliberately does not introduce.
+
+## The three questions
+
+1. **Can Flight Recorder replace most screenshots and console-log investigations?** For the
+   coaching/engine narrative, **yes** — the story is copyable/exportable in-app. For
+   visibility/wake-lock/audio, the DIAG overlay's media rows (same panel) replace the
+   console; together they cover the common investigations.
+2. **Can future investigations simply ask "tell me the story of this workout"?** Yes — copy
+   or export the verbose story and read it. INV-level questions ("did the coach restart?",
+   "when did speech resume?", "what was scheduled vs said?") are answerable from it.
+3. **Does surfacing it improve observability?** Yes — the memory that already existed is now
+   *reachable* without opening the console or taking screenshots, which is the whole point.
+
+*Flight Recorder owns nothing. It merely remembers — and now, developers can read what it
+remembered.*

@@ -48,7 +48,10 @@ export interface UseCoachedWorkoutReturn {
   /** Live speech-pipeline trace: coach + speech boundary counters (dev-only). */
   getSpeechTrace: () => SpeechPipelineTrace;
   /** The workout's story so far, as markdown — Flight Recorder (dev-only, PR-032). */
+  /** The full (verbose) workout story as markdown — Flight Recorder (dev-only, PR-032/034). */
   getStory: () => string;
+  /** The full workout story as JSON — Flight Recorder developer export (dev-only, PR-034). */
+  getStoryJson: () => string;
 }
 
 type Controller = HostRuntime['controller'];
@@ -295,8 +298,10 @@ export function useCoachedWorkout(
     }),
     [],
   );
-  /** The story of this workout so far, as markdown (dev-only; PR-032). */
-  const getStory = useCallback(() => recorderRef.current?.export() ?? '', []);
+  // Flight Recorder developer surface (PR-034): the full, unfiltered story so a
+  // strange session can be retold — markdown for reading/copying, JSON for tooling.
+  const getStory = useCallback(() => recorderRef.current?.export({ verbose: true }) ?? '', []);
+  const getStoryJson = useCallback(() => recorderRef.current?.exportJson() ?? '', []);
 
   return {
     snapshot,
@@ -310,5 +315,6 @@ export function useCoachedWorkout(
     getMediaDiagnostics,
     getSpeechTrace,
     getStory,
+    getStoryJson,
   };
 }
