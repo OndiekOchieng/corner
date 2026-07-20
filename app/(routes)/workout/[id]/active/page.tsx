@@ -72,7 +72,7 @@ function ActiveRunner({ workout }: { workout: Workout }) {
     ],
   );
 
-  const { snapshot, isSupported, isPreparing, pause, resume, quit, getSessionId, getMediaDiagnostics, getSpeechTrace } =
+  const { snapshot, isSupported, isPreparing, pause, resume, quit, getSessionId, getMediaDiagnostics, getSpeechTrace, getStory } =
     useCoachedWorkout(workout, settings);
 
   // When the engine finishes, let the closing bell + coach line land, then move
@@ -169,6 +169,7 @@ function ActiveRunner({ workout }: { workout: Workout }) {
         <WorkoutDiagnostics
           getMediaDiagnostics={getMediaDiagnostics}
           getSpeechTrace={getSpeechTrace}
+          getStory={getStory}
           workout={snapshot}
         />
       )}
