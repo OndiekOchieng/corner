@@ -96,8 +96,8 @@ call rather than a default.
 
 ## Success criteria
 
-How we'll know it worked — in terms of what the athlete **feels/does**, not vanity metrics.
-Finish with the one question every Corner change must pass:
+How we'll know it worked — in terms of what the athlete **feels/does**, not vanity metrics or
+software states. Finish with the one question every Corner change must pass:
 
 > Does this help the athlete forget they are training with software?
 

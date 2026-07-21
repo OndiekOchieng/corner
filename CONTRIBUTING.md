@@ -65,7 +65,8 @@ particular order; the philosophy is in
   Several of our best PRs shipped *only* documents. Design is work.
 - **Evidence before code.** When something is broken, prove *why* with instrumentation
   or an isolated reproduction before changing behaviour — don't guess-and-patch. The
-  speech-lifecycle fix followed a documented investigation, not a hunch.
+  speech-lifecycle fix followed a documented investigation, not a hunch. *"No idea yet"* is
+  an honest answer, and a no-code investigation is first-class work.
 - **Tests before merge.** Platform code is deterministic and framework-free, so it is
   exhaustively unit-tested and runs headless. New behaviour ships with tests; every PR
   keeps `pnpm test`, `pnpm build`, and type-checking green.
@@ -163,6 +164,10 @@ Every workout and coach must honour the non-negotiables (see
 - **Never shame, never unsafe, never break character** into app-speak.
 - **Silence is coaching.** Earn every line; leave most of the round quiet.
 - **Trust is the product.** When in doubt, say less and be honest.
+- **Success is an athlete experience, not a software state.** Judge Corner by whether the
+  athlete forgot the phone and never had to intervene — not by cues delivered or wake lock
+  held. (Athlete UAT and developer investigations are different lenses; don't confuse one for
+  the other.)
 
 Content that's schema-valid but violates these isn't a Corner contribution — the
 [Quality Checklist](docs/workouts/QUALITY_CHECKLIST.md) is the gate.
