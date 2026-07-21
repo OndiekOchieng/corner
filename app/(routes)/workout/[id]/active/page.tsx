@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { WorkoutScreen } from '@/components/Workout/WorkoutScreen';
 import { LeaveWorkoutGuard } from '@/components/Workout/LeaveWorkoutGuard';
 import { WorkoutDiagnostics } from '@/components/dev/WorkoutDiagnostics';
+import { captureDevWorkoutStory } from '@/src/lib/recorder';
 import { useWorkout, usePreferences } from '@/hooks';
 import { useCoachedWorkout, type CoachedWorkoutSettings } from '@/hooks/useCoachedWorkout';
 import type { Workout } from '@/types/workout';
@@ -83,6 +84,20 @@ function ActiveRunner({ workout }: { workout: Workout }) {
   // to the session the Persistence Subscriber just wrote to History.
   useEffect(() => {
     if (snapshot.phase !== 'finished') return;
+    // Developer Workout Story (dev-only): snapshot what happened NOW, while the
+    // recorder + diagnostics still exist, into a tiny in-memory holder that survives
+    // the client navigation to /finish. No persistence — a refresh forgets it.
+    if (process.env.NODE_ENV !== 'production') {
+      const trace = getSpeechTrace();
+      captureDevWorkoutStory({
+        title: workout.name,
+        storyMarkdown: getStory(),
+        storyJson: getStoryJson(),
+        coach: trace.coach,
+        media: getMediaDiagnostics(),
+        speech: trace.media?.service ?? null,
+      });
+    }
     const durationSec = Math.round(snapshot.elapsedMs / 1000);
     const query = new URLSearchParams({
       workoutName: workout.name,
@@ -94,7 +109,7 @@ function ActiveRunner({ workout }: { workout: Workout }) {
     if (sessionId) query.set('sessionId', sessionId);
     const timeout = setTimeout(() => router.push(`/finish?${query.toString()}`), 2600);
     return () => clearTimeout(timeout);
-  }, [snapshot.phase, snapshot.elapsedMs, snapshot.totalRounds, workout.name, router, getSessionId]);
+  }, [snapshot.phase, snapshot.elapsedMs, snapshot.totalRounds, workout.name, router, getSessionId, getStory, getStoryJson, getMediaDiagnostics, getSpeechTrace]);
 
   const handleQuit = () => {
     quit();

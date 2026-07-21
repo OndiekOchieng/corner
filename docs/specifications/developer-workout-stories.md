@@ -4,8 +4,8 @@
 
 | | |
 |---|---|
-| **Status** | In Review |
-| **Recommendation** | **YES** (scoped; single-session, dev-only — cross-session comparison is NOT YET) |
+| **Status** | Implemented |
+| **Recommendation** | **YES** (scoped; single-session, dev-only, **in-memory / no persistence** — cross-session + persistence are NOT YET) |
 | **Author** | Discovery (Claude Code) |
 | **Date** | 2026-07-21 |
 | **PR** | spec-only |
@@ -46,12 +46,14 @@ artifact.
    media/coach/speech diagnostics + `sessionId` + the Finish page all exist. What's missing is
    **capture-at-completion + survive-navigation + summarise into a verdict.** Nothing new needs
    to be *produced* — only *retained and digested*.
-4. **Most boring architecture?** At `WORKOUT_COMPLETED`, take a **snapshot** of the diagnostics
-   the overlay already reads (media + coach + speech) plus the Flight Recorder story, keep it in
-   a tiny **dev-only** store keyed by `sessionId` (in-memory, or `localStorage` for survival),
-   and render a **dev-only summary panel on the Finish page**. No new runtime, manager, service,
-   or state machine — it is a *projection of existing producers into a store the Finish page can
-   read*.
+4. **Most boring architecture?** At the moment the workout finishes, take a **snapshot** of the
+   diagnostics the overlay already reads (media + coach + speech) plus the Flight Recorder
+   story, hand it to a **dev-only in-memory holder** (a module singleton), and render a
+   **dev-only summary panel on the Finish page** that reads it. **No persistence** — the
+   `/active → /finish` navigation is client-side (JS/module state survives), and the redirect
+   fires ~2.6 s after finish, so the holder carries the snapshot across the one hop; a refresh
+   forgets it (acceptable for V1). No new runtime, manager, service, or state machine — a
+   *projection of existing producers into an in-memory holder the Finish page reads*.
 5. **What would removing look like?** It removes a *practice*, not code: the screenshot-and-
    console investigation. It could also let the live overlay stay exactly as-is (the summary is
    its surviving snapshot), so nothing is duplicated.
@@ -102,8 +104,8 @@ Boring over clever.
 - **Consumes:** the **developer, after the workout** — the missing consumer (today they're
   consumed only live, then discarded).
 - **Experiences:** **developers only** (dev-only; stripped from production).
-- **Remembers:** a per-session snapshot (in-memory or `localStorage`), keyed by `sessionId`.
-  Cross-session memory = NOT YET.
+- **Remembers:** a per-session snapshot held **in memory** for the single navigation to the
+  Finish page. **No persistence** — V1 is allowed to forget. Cross-session memory = NOT YET.
 - **Owns:** nobody new — it is a view. *Something already implemented (Flight Recorder + the
   diagnostics) naturally produces this; this work only retains + digests + surfaces it.*
 - **Can existing things implement it?** Yes, entirely.
@@ -161,6 +163,8 @@ the single one is "the session's health record, after the session."
   concerns; belong to a future Workout History, not here.
 - **Cross-session comparison ("vs yesterday")** — NOT YET; a follow-up once single-session
   survival exists.
+- **Any persistence** (`localStorage`, the session repository, a dev history) — deliberately
+  none for V1; that's cross-session/History thinking. V1 is allowed to forget.
 - **Any production surface** — deliberately none; this is dev-only.
 
 ## Questions to answer (§9)
@@ -201,6 +205,27 @@ IDEA" again is exactly the smile.
 
 **Recommendation restated: YES** — a single-session, dev-only Developer Workout Story that
 survives to the Finish page as a health digest (Flight Recorder timeline one tap away), built
-as a boring projection of existing producers into a dev store. **Cross-session comparison is
-NOT YET.** The goal is not to surface Flight Recorder — it is to ensure Corner's next surprise
-is met with *"Interesting; let's look at the Workout Story,"* never *"NO IDEA."*
+as a boring projection of existing producers into an **in-memory holder — no persistence.**
+**Cross-session comparison and any persistence are NOT YET.** The goal is not to surface Flight
+Recorder — it is to ensure Corner's next surprise is met with *"Interesting; let's look at the
+Workout Story,"* never *"NO IDEA."*
+
+---
+
+## Implemented
+
+Shipped exactly to scope — dev-only, single-session, in-memory, no persistence:
+
+- **`src/lib/recorder/DeveloperWorkoutStory.ts`** — a **pure** `summarizeWorkout()` (a
+  projection of the coach/media/speech diagnostics + the story into per-subsystem verdicts:
+  Speech · Coach · Wake lock · Visibility · Bell), plus a single **in-memory holder**
+  (`captureDevWorkoutStory` / `getDevWorkoutStory`) — no runtime, manager, or service.
+- **Capture:** the active page's existing finish effect snapshots the story + diagnostics
+  (dev-guarded) into the holder *before* navigating.
+- **Surface:** **`components/dev/DeveloperWorkoutStory.tsx`** on the Finish page — renders the
+  digest, an expandable timeline, and copy / .md / .json. Renders nothing in production or
+  after a refresh.
+- **Tests:** `src/tests/recorder/developerWorkoutStory.test.ts` (the pure summarizer + the
+  holder). 314 tests pass, tsc clean, `next build` green.
+
+No persistence, no new ownership, no cross-session memory — those remain NOT YET.
