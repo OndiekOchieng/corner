@@ -3,6 +3,7 @@
 import { Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { FinishScreen } from '@/components/Finish/FinishScreen';
+import { DeveloperWorkoutStory } from '@/components/dev/DeveloperWorkoutStory';
 import { PageContainer } from '@/components/ui/PageContainer';
 
 function FinishPageContent() {
@@ -22,6 +23,8 @@ function FinishPageContent() {
         totalRounds={totalRounds}
         sessionId={sessionId}
       />
+      {/* Dev-only outcome digest — renders nothing in production or after a refresh. */}
+      <DeveloperWorkoutStory />
     </PageContainer>
   );
 }

@@ -11,3 +11,13 @@ export {
   type StoryMoment,
   type StoryKind,
 } from './FlightRecorder';
+
+export {
+  summarizeWorkout,
+  buildDevWorkoutStory,
+  captureDevWorkoutStory,
+  getDevWorkoutStory,
+  type DevStoryVerdict,
+  type DevWorkoutStory,
+  type DevStoryInputs,
+} from './DeveloperWorkoutStory';
